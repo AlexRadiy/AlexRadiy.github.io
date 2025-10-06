@@ -1,26 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
 body {
   margin: 0;
   overflow: hidden;
-  font-family: sans-serif;
+  font-family: 'Press Start 2P', sans-serif;
+  background: #000; /* optional black background */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
 }
 
 #overlay {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 8px;
-  padding: 10px 20px;
-  color: rgb(109, 102, 102);
-  backdrop-filter: blur(4px);
+  position: fixed; /* Make it overlay the screen */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, 80%); /* Center it */
+  
+  background: #0000009d;
+  border: 2px solid #fff;
+  border-radius: 0;
+  padding: 40px;
+  color: #fff;
+  text-align: center;
+  
+  width: 500px;
+  height: 100px;
+  
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  z-index: 1000; /* Ensure it appears above other elements */
 }
 
 #overlay button {
-  margin-top: 10px;
-  padding: 5px 10px;
-  background: rgba(255, 255, 255, 0.3);
-  border: none;
-  color: rgb(109, 102, 102);
+  margin-top: 20px;
+  padding: 10px 20px;
+  background: #fff;
+  color: #000;
+  border: 2px solid #fff;
+  font-family: 'Press Start 2P', sans-serif;
+  font-size: 12px;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#overlay button:hover {
+  background: #000;
+  color: #fff;
+  border: 2px solid #fff;
 }
