@@ -1,12 +1,16 @@
+//WHEN CLOSE BUTTON IS CLICKED, I CLICK THE STANDGUY SO IT NEVER GETS CLOSED. STANDGUY ONLY LISTENS TO CLICKS WHEN THERE IS NO OVERLAY. FIX!!!
+
+
 import * as THREE from 'https://cdn.skypack.dev/three@0.150.1';
 
 let camera, scene, renderer;
 let mouseX = 0, mouseY = 0;
 let FlickerLight;
-let CigaretteButt, CigaretteLight, CigaretteButtAnimation;
+let CigaretteButt, CigaretteLight;
 let Smoke1, Smoke2;
 let StandGuy;
 let INTERSECTED = null;
+let StandGuyScrewedYou = false;
 
 const windowHalf = {
   x: window.innerWidth / 2,
@@ -14,6 +18,12 @@ const windowHalf = {
 };
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
+
+const overlay = document.getElementById("overlay");
+const message = document.getElementById("message");
+const buttonsDiv = document.getElementById("buttons");
+
+
 
 init();
 animate();
@@ -98,29 +108,153 @@ scene.add(Smoke2);
   // Resize
   window.addEventListener('resize', onWindowResize);
 
-  // Button logic
-  document.getElementById("toggleBtn").addEventListener("click", () => {
-    document.getElementById("message").innerText = "Idk yet. Probably tell you some cool films. Maybe let you play some synths. Whatever. It`s JS, baby!";
-    document.getElementById("toggleBtn").style.display = "none";
-  });
 }
 
-//Idk yet. Probably tell you some cool films. Maybe let you play some synths. Whatever. It`s JS, baby!
-//Oh hi! So nice to see some people here. This is a study project I`m working on. Today I added lights, toggle, clickable character and smoke animation. For now I`m just chilling.
-
-
+//StandGuy clicking menu
 function onClick() {
+    if (overlay.style.display === "flex") return; 
+  if (StandGuyScrewedYou) {
+    showGoodbyeMessage();
+    return;
+  }
+
   raycaster.setFromCamera(mouse, camera);
   const intersects = raycaster.intersectObject(StandGuy);
 
   if (intersects.length > 0) {
-    // Show toggle button
-    const overlay = document.getElementById("overlay");
-    overlay.style.display = "flex";
-    
-    // Reset message text
-    //document.getElementById("message").innerText = "Oh hi! So nice to see some people here. This is a study project I`m working on. Today I added lights, toggle, clickable character and smoke animation. For now I`m just chilling.";
+    showInitialOptions();
   }
+}
+
+//mainmenu
+function showInitialOptions() {
+  overlay.style.display = "flex";
+  message.innerText = "Yo  man. How can i help you?";
+  buttonsDiv.innerHTML = "";
+
+  const questions = [
+    { text: "I got noone to talk to...", handler: handleQ1 },
+    { text: "Recommend me a movie!", handler: handleQ2 },
+    { text: "What are you doing here?", handler: handleQ3 },
+    { text: "I`m just wandering around", handler: handleQ4 },
+  ];
+
+  questions.forEach(q => {
+    const btn = document.createElement("button");
+    btn.textContent = q.text;
+    btn.addEventListener("click", q.handler);
+    buttonsDiv.appendChild(btn);
+  });
+}
+
+//Q1
+function handleQ1() {
+  
+  message.innerText = "I see. Tell me what`s been bothering you.";
+  buttonsDiv.innerHTML = "";
+  
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.placeholder = "Enter your response";
+
+  const submitBtn = document.createElement("button");
+  submitBtn.textContent = "...So what you think?";
+
+  submitBtn.addEventListener("click", () => {
+    const userInput = input.value;
+    alert(`Sending to server: ${userInput}`); // Simulate sending
+
+    message.innerText = "I think I just got your personal data. HA!!";
+    buttonsDiv.innerHTML = "";
+
+    const closeBtn = document.createElement("button");
+    closeBtn.textContent = "omfg not again...";
+    closeBtn.addEventListener("click", () => overlay.style.display = "none");
+    buttonsDiv.appendChild(closeBtn);
+  });
+
+  buttonsDiv.appendChild(input);
+  buttonsDiv.appendChild(submitBtn);
+}
+
+//Q2
+function handleQ2() {
+  message.innerText = "Yeah. Watch ya thinking `bout?";
+  buttonsDiv.innerHTML = "";
+
+  const btn1 = document.createElement("button");
+  btn1.textContent = "Today is a marvelous day.";
+  btn1.addEventListener("click", () => {
+    const today = new Date();
+    const options = { month: 'long', day: 'numeric' };
+    const formattedDate = today.toLocaleDateString('en-US', options);
+
+    message.innerText = `Is it? ${formattedDate}? I guess. Autumn is great for Dead Poets Society.`;
+    buttonsDiv.innerHTML = "";
+
+    const closeBtn = document.createElement("button");
+    closeBtn.textContent = "Thanks!";
+    closeBtn.addEventListener("click", () => overlay.style.display = "none");
+    buttonsDiv.appendChild(closeBtn);
+  });
+
+  const btn2 = document.createElement("button");
+  btn2.textContent = "What are your favourites?";
+  btn2.addEventListener("click", () => {
+    camera.position.z -= 100;
+    triggerExternalAnimation(); // Stub
+    message.innerText = "You will never be able to comprehend the levels of MY understanding of cinema.";
+    buttonsDiv.innerHTML = "";
+
+    const closeBtn = document.createElement("button");
+    closeBtn.textContent = "...I guess.";
+    closeBtn.addEventListener("click", () => {camera.position.z -= -100; overlay.style.display = "none"});
+    buttonsDiv.appendChild(closeBtn);
+  });
+
+  buttonsDiv.appendChild(btn1);
+  buttonsDiv.appendChild(btn2);
+}
+
+// Stub external animation function
+function triggerExternalAnimation() {
+  console.log("External animation triggered");
+}
+
+
+//Q3
+function handleQ3() {
+  message.innerText = "Mostly chillin`. There`s not much to do yet";
+  buttonsDiv.innerHTML = "";
+
+  const closeBtn = document.createElement("button");
+  closeBtn.textContent = "Close";
+  closeBtn.addEventListener("click", () => overlay.style.display = "none");
+  buttonsDiv.appendChild(closeBtn);
+}
+
+
+//Q4
+function handleQ4() {
+  message.innerText = "Then don`t bother me!";
+  buttonsDiv.innerHTML = "";
+  setTimeout(() => {
+    overlay.style.display = "none";
+    StandGuyScrewedYou = true;
+  }, 4000);
+}
+
+//Goodbye Message
+function showGoodbyeMessage() {
+  overlay.style.display = "flex";
+  message.innerText = "Don`t bother me.";
+  buttonsDiv.innerHTML = "";
+  
+  setTimeout(() => {
+    overlay.style.display = "none";
+    StandGuyScrewedYou = true;
+  }, 2000);
 }
 
 function onDocumentMouseMove(event) {
@@ -143,19 +277,25 @@ function onWindowResize() {
 function animate() {
   requestAnimationFrame(animate);
 
-  //FlickLight flicker 
+
+
+  //FlickerLight flicker 
   if (Math.random() < 0.05) { //% chance per frame
   FlickerLight.intensity = 0.5 + Math.random() * 0.5;
 } else {
   FlickerLight.intensity = 1.0;
 }
 
-  //CigaretteButt.intensity
+
+  //CIGGIE ANIMATION
+  //CigaretteButt light
+ 
   const Inhale = 2000;
   const pauseInhale = 800;
   const Exhale = 3000;
   const pauseExhale = 10000;
   const cycle = Inhale + pauseInhale + Exhale + pauseExhale;
+  const smokepause = Inhale + pauseInhale + Exhale;
   const minIntensity = 3;
   const maxIntensity = 100;
   const lerp = (a, b, t) => a + (b - a) * t;
@@ -170,11 +310,11 @@ function animate() {
 } else {
   CigaretteButt.intensity = minIntensity;
 }
+
+  //CigaretteLight ambient light
   
-  //CigaretteLight.intensity
   const minIntensityCL = 0.5;
   const maxIntensityCL = 2;
-  
 
     if (t < Inhale) {
   CigaretteLight.intensity = lerp(minIntensityCL, maxIntensityCL, t / Inhale);
@@ -185,21 +325,19 @@ function animate() {
 } else {
   CigaretteLight.intensity = 0.5 + 0.2 * Math.sin(t * 0.0005);
 }
-  
 
   //Smoke animation
-  const smoketimer = Date.now() % cycle;
-  const smokepause = Inhale + pauseInhale + Exhale;
-if (smoketimer < 154 + smokepause) {
+
+if (t < 154 + smokepause) {
   Smoke1.visible = false;
   Smoke2.visible = false;
-} else if (smoketimer < 783 + smokepause) {
+} else if (t < 783 + smokepause) {
   Smoke1.visible = false;
   Smoke2.visible = true;
-} else if (smoketimer < 1100 + smokepause) {
+} else if (t < 1100 + smokepause) {
   Smoke1.visible = true;
   Smoke2.visible = true;
-} else if (smoketimer < 2111 + smokepause) {
+} else if (t < 2111 + smokepause) {
   Smoke1.visible = true;
   Smoke2.visible = false;
 } else {
@@ -217,40 +355,49 @@ if (smoketimer < 154 + smokepause) {
 
   //Object highlighting
 
-raycaster.setFromCamera(mouse, camera);
-const intersects = raycaster.intersectObject(StandGuy);
+if (overlay.style.display !== "flex") {
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObject(StandGuy);
 
-if (intersects.length > 0) {
-  const hit = intersects[0];
-  const distanceToCenter = hit.point.distanceTo(StandGuy.position);
+  if (intersects.length > 0) {
+    const hit = intersects[0];
+    const distanceToCenter = hit.point.distanceTo(StandGuy.position);
 
-  // Only highlight if hit is near object's center
-  if (distanceToCenter < 200) {
-    if (INTERSECTED !== StandGuy) {
+    // Only highlight if hit is near object's center
+    if (distanceToCenter < 100) {
+      if (INTERSECTED !== StandGuy) {
+        if (INTERSECTED && INTERSECTED.material && INTERSECTED.currentHex !== undefined) {
+          INTERSECTED.material.emissive.setHex(INTERSECTED.currentHex);
+        }
+
+        INTERSECTED = StandGuy;
+
+        if (INTERSECTED.material && INTERSECTED.material.emissive) {
+          INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+          INTERSECTED.material.emissive.setHex(0x1a1714);
+        }
+      }
+    } else {
       if (INTERSECTED && INTERSECTED.material && INTERSECTED.currentHex !== undefined) {
         INTERSECTED.material.emissive.setHex(INTERSECTED.currentHex);
       }
-
-      INTERSECTED = StandGuy;
-
-      if (INTERSECTED.material && INTERSECTED.material.emissive) {
-        INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
-        INTERSECTED.material.emissive.setHex(0x1a1714);
-         
-      }
+      INTERSECTED = null;
     }
   } else {
     if (INTERSECTED && INTERSECTED.material && INTERSECTED.currentHex !== undefined) {
       INTERSECTED.material.emissive.setHex(INTERSECTED.currentHex);
-      
     }
     INTERSECTED = null;
   }
 } else {
+  // If overlay is up, always clear highlight
   if (INTERSECTED && INTERSECTED.material && INTERSECTED.currentHex !== undefined) {
     INTERSECTED.material.emissive.setHex(INTERSECTED.currentHex);
-    
   }
   INTERSECTED = null;
 }
 }
+
+//Camera animations
+
+
