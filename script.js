@@ -34,7 +34,7 @@ function init() {
 
   // Camera
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 5000);
-  camera.position.set(0, 50, 0);
+  camera.position.set(0, 50, 100);
 
   //Light
 
@@ -156,7 +156,7 @@ function handleQ1() {
 
   const input = document.createElement("input");
   input.type = "text";
-  input.placeholder = "Enter your response";
+  input.placeholder = "";
 
   const submitBtn = document.createElement("button");
   submitBtn.textContent = "...So what you think?";
@@ -170,7 +170,7 @@ function handleQ1() {
 
     const closeBtn = document.createElement("button");
     closeBtn.textContent = "omfg not again...";
-    closeBtn.addEventListener("click", () => overlay.style.display = "none");
+    closeBtn.addEventListener("click", (e) => {e.stopPropagation(); overlay.style.display = "none";});
     buttonsDiv.appendChild(closeBtn);
   });
 
@@ -195,21 +195,21 @@ function handleQ2() {
 
     const closeBtn = document.createElement("button");
     closeBtn.textContent = "Thanks!";
-    closeBtn.addEventListener("click", () => overlay.style.display = "none");
+    closeBtn.addEventListener("click", (e) => {e.stopPropagation(); overlay.style.display = "none";});
     buttonsDiv.appendChild(closeBtn);
   });
 
   const btn2 = document.createElement("button");
   btn2.textContent = "What are your favourites?";
   btn2.addEventListener("click", () => {
-    camera.position.z -= 100;
+    camera.position.z -= 200;
     triggerExternalAnimation(); // Stub
     message.innerText = "You will never be able to comprehend the levels of MY understanding of cinema.";
     buttonsDiv.innerHTML = "";
 
     const closeBtn = document.createElement("button");
     closeBtn.textContent = "...I guess.";
-    closeBtn.addEventListener("click", () => {camera.position.z -= -100; overlay.style.display = "none"});
+    closeBtn.addEventListener("click", (e) => {e.stopPropagation(); camera.position.z -= -200; overlay.style.display = "none";});
     buttonsDiv.appendChild(closeBtn);
   });
 
@@ -230,7 +230,7 @@ function handleQ3() {
 
   const closeBtn = document.createElement("button");
   closeBtn.textContent = "Close";
-  closeBtn.addEventListener("click", () => overlay.style.display = "none");
+  closeBtn.addEventListener("click", (e) => {e.stopPropagation(); overlay.style.display = "none";});
   buttonsDiv.appendChild(closeBtn);
 }
 
@@ -280,8 +280,8 @@ function animate() {
 
 
   //FlickerLight flicker 
-  if (Math.random() < 0.05) { //% chance per frame
-  FlickerLight.intensity = 0.5 + Math.random() * 0.5;
+  if (Math.random() < 0.01) { //% chance per frame
+  FlickerLight.intensity = 0.3 + Math.random() * 0.5;
 } else {
   FlickerLight.intensity = 1.0;
 }
