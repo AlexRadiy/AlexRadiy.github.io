@@ -186,9 +186,9 @@ function showInitialOptions() {
 
   const questions = [
     { text: "I got noone to talk to...", handler: handleQ1 },
-    { text: "Recommend me a movie!", handler: handleQ2 },
-    { text: "What are you doing here?", handler: handleQ3 },
-    { text: "I`m just wandering around", handler: handleQ4 },
+   // { text: "Recommend me a movie!", handler: handleQ2 },
+   // { text: "What are you doing here?", handler: handleQ3 },
+   // { text: "I`m just wandering around", handler: handleQ4 },
   ];
 
   questions.forEach(q => {
@@ -202,29 +202,46 @@ function showInitialOptions() {
 //Q1
 function handleQ1() {
   
-  message.innerText = "I see. Tell me what`s been bothering you.";
+  message.innerText = "Wanna hear a joke? Gimme a theme";
   buttonsDiv.innerHTML = "";
   
 
   const input = document.createElement("input");
   input.type = "text";
   input.placeholder = "";
+  input.classList.add("overlay-input");
 
   const submitBtn = document.createElement("button");
-  submitBtn.textContent = "...So what you think?";
+  submitBtn.textContent = "Try this";
 
   submitBtn.addEventListener("click", () => {
-    const userInput = input.value;
-    alert(`Sending to server: ${userInput}`); // Simulate sending
+  const userInput = input.value;
 
-    message.innerText = "I think I just got your personal data. HA!!";
-    buttonsDiv.innerHTML = "";
-
-    const closeBtn = document.createElement("button");
-    closeBtn.textContent = "omfg not again...";
-    closeBtn.addEventListener("click", (e) => {e.stopPropagation(); overlay.style.display = "none"; camera.position.z -= -100;});
-    buttonsDiv.appendChild(closeBtn);
+  // Send userInput to Google Cloud Function
+  fetch('https://gemini-cloud-function-994729946863.europe-west1.run.app', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ prompt: "Answer to me in short, subtle manner, in the same language as the joke theme provided further. Tell me a fresh modern joke about:" + userInput })
+})
+  .then(res => res.json())
+  .then(data => {
+    if (data.reply !== undefined) {
+      message.innerText = data.reply;
+    } else if (data.error) {
+      message.innerText = "Error: " + data.error;
+    } else {
+      message.innerText = "Error: Unexpected response";
+    }
+  })
+  .catch(err => {
+    message.innerText = "Error: " + err.message;
   });
+          buttonsDiv.innerHTML = "";
+      const closeBtn = document.createElement("button");
+      closeBtn.textContent = "omfg not again...";
+      closeBtn.addEventListener("click", (e) => {e.stopPropagation(); overlay.style.display = "none"; camera.position.z -= -100;});
+      buttonsDiv.appendChild(closeBtn);
+});
 
   buttonsDiv.appendChild(input);
   buttonsDiv.appendChild(submitBtn);

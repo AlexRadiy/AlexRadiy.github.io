@@ -13,7 +13,7 @@ body {
 
 #overlay {
   position: fixed; /* Make it overlay the screen */
-  top: 50%;
+  top: 70%;
   left: 50%;
   transform: translate(-50%, 0%); /* Center it */
   
@@ -52,4 +52,23 @@ body {
   background: #000;
   color: #fff;
   border: 2px solid #fff;
+}
+
+#overlay .overlay-input {
+  width: min(600px, 90%);
+  padding: 14px 16px;
+  font-family: 'Press Start 2P', sans-serif;
+  font-size: 16px;        
+  line-height: 1.2;
+  height: 48px;            /* explicit height */
+  border: 2px solid #fff;
+  background: #000;
+  color: #fff;
+  box-sizing: border-box;  /* keeps width predictable with padding */
+  margin-top: 12px;
+}
+
+#overlay .overlay-input::placeholder {
+  color: #bbb;
+  opacity: 1;
 }
