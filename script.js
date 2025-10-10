@@ -241,7 +241,7 @@ function handleQ1() {
   fetch('https://gemini-cloud-function-994729946863.europe-west1.run.app', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ prompt: "Тебе пишет именинница по имени Настя. Не забудь поздравить!:" + userInput })
+  body: JSON.stringify({ prompt: "Тебе пишет именинница по имени Настя. Не забудь поздравить! Но коротко. Так лучше разрнуто ответь на соощение:" + userInput })
 })
   .then(res => res.json())
   .then(data => {
