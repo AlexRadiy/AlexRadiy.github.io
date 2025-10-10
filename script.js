@@ -12,6 +12,8 @@ let Smoke1, Smoke2;
 let StandGuy;
 let INTERSECTED = null;
 let StandGuyScrewedYou = false;
+let SpinForMeBaby = false;
+let socks;
 
 const windowHalf = {
   x: window.innerWidth / 2,
@@ -122,6 +124,16 @@ scene.add( pointLightHelper4 );
   ];
 
 
+  //BIRTHDAY
+ socks = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshLambertMaterial({ map: loader.load('socks.png'), transparent: true, side: THREE.DoubleSide }));
+  socks.position.set(300, -200, -270);
+  scene.add(socks);
+  
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(1000, 300), new THREE.MeshLambertMaterial({ map: loader.load('sign.png'), transparent: true, side: THREE.DoubleSide }));
+  sign.position.set(0, 110, -499);
+  scene.add(sign);
+
+
   // Room cube
   const roomgeometry = new THREE.BoxGeometry(1280, 720, 1280);
   const room = new THREE.Mesh(roomgeometry, roommaterials);
@@ -163,17 +175,25 @@ scene.add(Smoke2);
 
 //StandGuy clicking menu
 function onClick() {
-    if (overlay.style.display === "flex") return; 
+  if (overlay.style.display === "flex") return;
+
   if (StandGuyScrewedYou) {
     showGoodbyeMessage();
     return;
   }
 
   raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObject(StandGuy);
 
-  if (intersects.length > 0) {
+  //StandGuy
+  const standIntersects = raycaster.intersectObject(StandGuy);
+  if (standIntersects.length > 0) {
     showInitialOptions();
+  }
+
+  //Socks
+  const socksIntersects = raycaster.intersectObject(socks);
+  if (socksIntersects.length > 0) {
+    SpinForMeBaby = !SpinForMeBaby;
   }
 }
 
@@ -181,14 +201,14 @@ function onClick() {
 function showInitialOptions() {
   camera.position.z -= 100;
   overlay.style.display = "flex";
-  message.innerText = "Yo  man. How can i help you?";
+  message.innerText = "У кого др-то?))";
   buttonsDiv.innerHTML = "";
 
   const questions = [
-    { text: "I got noone to talk to...", handler: handleQ1 },
-   // { text: "Recommend me a movie!", handler: handleQ2 },
-   // { text: "What are you doing here?", handler: handleQ3 },
-   // { text: "I`m just wandering around", handler: handleQ4 },
+    { text: "У меня!!!)))00!)0", handler: handleQ1 },
+   //{ text: "Recommend me a movie!", handler: handleQ2 },
+   //{ text: "What are you doing here?", handler: handleQ3 },
+   //{ text: "I`m just wandering around", handler: handleQ4 },
   ];
 
   questions.forEach(q => {
@@ -202,7 +222,7 @@ function showInitialOptions() {
 //Q1
 function handleQ1() {
   
-  message.innerText = "Wanna hear a joke? Gimme a theme";
+  message.innerText = "Как проводишь дэрэшку?) По сути напиши что угодно.";
   buttonsDiv.innerHTML = "";
   
 
@@ -212,7 +232,7 @@ function handleQ1() {
   input.classList.add("overlay-input");
 
   const submitBtn = document.createElement("button");
-  submitBtn.textContent = "Try this";
+  submitBtn.textContent = "Submit";
 
   submitBtn.addEventListener("click", () => {
   const userInput = input.value;
@@ -221,7 +241,7 @@ function handleQ1() {
   fetch('https://gemini-cloud-function-994729946863.europe-west1.run.app', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ prompt: "Answer to me in short, subtle manner, in the same language as the joke theme provided further. Tell me a fresh modern joke about:" + userInput })
+  body: JSON.stringify({ prompt: "Тебе пишет именинница по имени Настя. Не забудь поздравить!:" + userInput })
 })
   .then(res => res.json())
   .then(data => {
@@ -425,37 +445,44 @@ if (t < 154 + smokepause) {
   renderer.render(scene, camera);
 
 
-  //Object highlighting
+  // Object highlighting
 
 if (overlay.style.display !== "flex") {
   raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObject(StandGuy);
+  
+  // Raycast against both StandGuy and socks
+  const intersects = raycaster.intersectObjects([StandGuy, socks]);
 
   if (intersects.length > 0) {
     const hit = intersects[0];
-    const distanceToCenter = hit.point.distanceTo(StandGuy.position);
+    const object = hit.object;
+    const distanceToCenter = hit.point.distanceTo(object.position);
 
     // Only highlight if hit is near object's center
     if (distanceToCenter < 100) {
-      if (INTERSECTED !== StandGuy) {
+      if (INTERSECTED !== object) {
+        // Remove highlight from previously intersected object
         if (INTERSECTED && INTERSECTED.material && INTERSECTED.currentHex !== undefined) {
           INTERSECTED.material.emissive.setHex(INTERSECTED.currentHex);
         }
 
-        INTERSECTED = StandGuy;
+        INTERSECTED = object;
 
+        // Apply highlight to the new intersected object
         if (INTERSECTED.material && INTERSECTED.material.emissive) {
           INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
           INTERSECTED.material.emissive.setHex(0x1a1714);
         }
       }
     } else {
+      // Distance too far, remove highlight
       if (INTERSECTED && INTERSECTED.material && INTERSECTED.currentHex !== undefined) {
         INTERSECTED.material.emissive.setHex(INTERSECTED.currentHex);
       }
       INTERSECTED = null;
     }
   } else {
+    // Nothing intersected, clear highlight
     if (INTERSECTED && INTERSECTED.material && INTERSECTED.currentHex !== undefined) {
       INTERSECTED.material.emissive.setHex(INTERSECTED.currentHex);
     }
@@ -468,6 +495,13 @@ if (overlay.style.display !== "flex") {
   }
   INTERSECTED = null;
 }
+
+
+//SPINFORMEBABY
+  if (SpinForMeBaby) {
+  socks.rotation.z += 2;
+  }
+
 }
 
 //Camera animations
