@@ -3,6 +3,7 @@
 
 import * as THREE from 'https://cdn.skypack.dev/three@0.150.1';
 
+
 let camera, scene, renderer;
 let mouseX = 0, mouseY = 0;
 let FlickerLight;
@@ -38,27 +39,48 @@ function init() {
 
   //Light
 
-  const OverallLight = new THREE.AmbientLight(0x29010a, 0.2, 1700);
-OverallLight.position.set(-200, 100, 0);
+  const OverallLight = new THREE.AmbientLight(0x7a6b5c, 0.4, 10000);
+OverallLight.position.set(0, 200, -100);
 scene.add(OverallLight);
 
-  const CeilingLight = new THREE.PointLight(0xffffff, 1.7, 1400);
-CeilingLight.position.set(200, 50, 300);
+  const CeilingLight = new THREE.PointLight(0x7a6b5c, 0, 1000);
+CeilingLight.position.set(400, 330, -100);
 scene.add(CeilingLight);
 
-  FlickerLight = new THREE.PointLight(0xffffff, 1.7, 1400);
-FlickerLight.position.set(-200, 50, 300);
+
+  const SpotLight = new THREE.PointLight(0x635a52, 3, 1000);
+SpotLight.position.set(0, 120, 0);
+scene.add(SpotLight);
+
+  const CeilingLight2 = new THREE.PointLight(0x7a6b5c, 1.1, 1000);
+CeilingLight2.position.set(400, 330, -500);
+scene.add(CeilingLight2);
+  
+  const CeilingLight3 = new THREE.PointLight(0xffffff, 0, 1000);
+CeilingLight3.position.set(-400, 330, -100);
+scene.add(CeilingLight3);
+
+  FlickerLight = new THREE.PointLight(0x7a6b5c, 1.1, 1000);
+FlickerLight.position.set(-400, 330, -500);
 scene.add(FlickerLight);
 
   CigaretteButt = new THREE.PointLight(0xff532b, 100, 10);
-CigaretteButt.position.set(62, 70, -499);
+CigaretteButt.position.set(55.5, 30, -499);
 scene.add(CigaretteButt);
 
   CigaretteLight = new THREE.PointLight(0xb33417, 0.5, 200);
-CigaretteLight.position.set(50, 70, -470);
+CigaretteLight.position.set(55.5, 30, -470);
 scene.add(CigaretteLight);
 
   
+const pointLightHelper1 = new THREE.PointLightHelper( CeilingLight, 0);
+const pointLightHelper2 = new THREE.PointLightHelper( CeilingLight2, 0);
+const pointLightHelper3 = new THREE.PointLightHelper( CeilingLight3, 0);
+const pointLightHelper4 = new THREE.PointLightHelper( FlickerLight, 0);
+scene.add( pointLightHelper1 );
+scene.add( pointLightHelper2 );
+scene.add( pointLightHelper3 );
+scene.add( pointLightHelper4 );
   
 
   // Renderer
@@ -69,7 +91,7 @@ scene.add(CigaretteLight);
 
   // Load textures
   const loader = new THREE.TextureLoader();
-  const materials = [
+  const roommaterials = [
     new THREE.MeshLambertMaterial({ map: loader.load('Wall1.png'), side: THREE.BackSide }), 
     new THREE.MeshLambertMaterial({ map: loader.load('Wall2.png'), side: THREE.BackSide }), 
     new THREE.MeshLambertMaterial({ map: loader.load('Ceiling.png'), side: THREE.BackSide }), 
@@ -80,14 +102,43 @@ scene.add(CigaretteLight);
   const StandGuyTexture = new THREE.MeshLambertMaterial({ map: loader.load('Stand.png'), transparent: true, side: THREE.DoubleSide });
   const Smoke1Texture = new THREE.MeshLambertMaterial({ map: loader.load('Stand smoke.png'), transparent: true, side: THREE.DoubleSide });
   const Smoke2Texture = new THREE.MeshLambertMaterial({ map: loader.load('Stand smoke 2.png'), transparent: true, side: THREE.DoubleSide });
+  
+  const tabletopmaterials = [
+    new THREE.MeshLambertMaterial({ map: loader.load('tabletop_side.png'), side: THREE.DoubleSide }), 
+    new THREE.MeshLambertMaterial({ map: loader.load('tabletop_side.png'), side: THREE.DoubleSide }), 
+    new THREE.MeshLambertMaterial({ map: loader.load('tabletop_top.png'), side: THREE.DoubleSide }),   
+    new THREE.MeshLambertMaterial({ map: loader.load('tabletop_top.png'), side: THREE.DoubleSide }), 
+    new THREE.MeshLambertMaterial({ map: loader.load('tabletop_front.png'), side: THREE.DoubleSide }), 
+    new THREE.MeshLambertMaterial({ map: loader.load('tabletop_front.png'), side: THREE.DoubleSide }),
+  ];
 
-  // Create cube (room)
-  const geometry = new THREE.BoxGeometry(1280, 720, 1280);
-  const room = new THREE.Mesh(geometry, materials);
+  const tablematerials = [
+    new THREE.MeshLambertMaterial({ map: loader.load('table_side.png'), transparent: true, side: THREE.DoubleSide }), 
+    new THREE.MeshLambertMaterial({ map: loader.load('table_side.png'), transparent: true, side: THREE.DoubleSide }), 
+    new THREE.MeshLambertMaterial({ map: loader.load('table_front.png'), transparent: true, side: THREE.DoubleSide }),   
+    new THREE.MeshLambertMaterial({ map: loader.load('table_front.png'), transparent: true, side: THREE.DoubleSide }), 
+    new THREE.MeshLambertMaterial({ map: loader.load('table_front.png'), transparent: true, side: THREE.DoubleSide }), 
+    new THREE.MeshLambertMaterial({ map: loader.load('table_front.png'), transparent: true, side: THREE.DoubleSide }),
+  ];
+
+
+  // Room cube
+  const roomgeometry = new THREE.BoxGeometry(1280, 720, 1280);
+  const room = new THREE.Mesh(roomgeometry, roommaterials);
   scene.add(room);
 
+  // table&tabletop cube
+  const tabletop = new THREE.Mesh(new THREE.BoxGeometry(785, 21, 231), tabletopmaterials);
+  tabletop.position.set(0, -110, -400);
+  scene.add(tabletop);
+
+  const table = new THREE.Mesh(new THREE.BoxGeometry(750, 157, 207), tablematerials);
+  table.position.set(0, -180, -400);
+  scene.add(table);
+
+
   // Guy texture
-StandGuy = new THREE.Mesh(new THREE.PlaneGeometry(1280, 720), StandGuyTexture);
+StandGuy = new THREE.Mesh(new THREE.PlaneGeometry(222, 327), StandGuyTexture);
 StandGuy.position.set(0, 0, -500);
 StandGuy.name = "Stranger";
 scene.add(StandGuy);
@@ -128,6 +179,7 @@ function onClick() {
 
 //mainmenu
 function showInitialOptions() {
+  camera.position.z -= 100;
   overlay.style.display = "flex";
   message.innerText = "Yo  man. How can i help you?";
   buttonsDiv.innerHTML = "";
@@ -170,7 +222,7 @@ function handleQ1() {
 
     const closeBtn = document.createElement("button");
     closeBtn.textContent = "omfg not again...";
-    closeBtn.addEventListener("click", (e) => {e.stopPropagation(); overlay.style.display = "none";});
+    closeBtn.addEventListener("click", (e) => {e.stopPropagation(); overlay.style.display = "none"; camera.position.z -= -100;});
     buttonsDiv.appendChild(closeBtn);
   });
 
@@ -195,14 +247,14 @@ function handleQ2() {
 
     const closeBtn = document.createElement("button");
     closeBtn.textContent = "Thanks!";
-    closeBtn.addEventListener("click", (e) => {e.stopPropagation(); overlay.style.display = "none";});
+    closeBtn.addEventListener("click", (e) => {e.stopPropagation(); overlay.style.display = "none";camera.position.z -= -100;});
     buttonsDiv.appendChild(closeBtn);
   });
 
   const btn2 = document.createElement("button");
   btn2.textContent = "What are your favourites?";
   btn2.addEventListener("click", () => {
-    camera.position.z -= 200;
+    camera.position.z -= 100;
     triggerExternalAnimation(); // Stub
     message.innerText = "You will never be able to comprehend the levels of MY understanding of cinema.";
     buttonsDiv.innerHTML = "";
@@ -230,7 +282,7 @@ function handleQ3() {
 
   const closeBtn = document.createElement("button");
   closeBtn.textContent = "Close";
-  closeBtn.addEventListener("click", (e) => {e.stopPropagation(); overlay.style.display = "none";});
+  closeBtn.addEventListener("click", (e) => {e.stopPropagation(); camera.position.z -= -100; overlay.style.display = "none";});
   buttonsDiv.appendChild(closeBtn);
 }
 
@@ -240,9 +292,10 @@ function handleQ4() {
   message.innerText = "Then don`t bother me!";
   buttonsDiv.innerHTML = "";
   setTimeout(() => {
+    camera.position.z -= -100;
     overlay.style.display = "none";
     StandGuyScrewedYou = true;
-  }, 4000);
+  }, 2000);
 }
 
 //Goodbye Message
@@ -250,8 +303,10 @@ function showGoodbyeMessage() {
   overlay.style.display = "flex";
   message.innerText = "Don`t bother me.";
   buttonsDiv.innerHTML = "";
+  camera.position.z -= 100;
   
   setTimeout(() => {
+    camera.position.z -= -100;
     overlay.style.display = "none";
     StandGuyScrewedYou = true;
   }, 2000);
@@ -281,7 +336,7 @@ function animate() {
 
   //FlickerLight flicker 
   if (Math.random() < 0.01) { //% chance per frame
-  FlickerLight.intensity = 0.3 + Math.random() * 0.5;
+  FlickerLight.intensity = 0.3 + Math.random() * 0.1;
 } else {
   FlickerLight.intensity = 1.0;
 }
