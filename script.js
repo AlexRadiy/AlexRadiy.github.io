@@ -222,7 +222,7 @@ function showInitialOptions() {
 //Q1
 function handleQ1() {
   
-  message.innerText = "Как проводишь дэрэшку?) По сути напиши что угодно.";
+  message.innerText = "Генератор поздравления на любую тему (но только для Насти)";
   buttonsDiv.innerHTML = "";
   
 
@@ -241,7 +241,7 @@ function handleQ1() {
   fetch('https://gemini-cloud-function-994729946863.europe-west1.run.app', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ prompt: "Тебе пишет именинница по имени Настя. Не забудь поздравить! Но коротко. Так лучше разрнуто ответь на соощение:" + userInput })
+  body: JSON.stringify({ prompt: "Поздравь именинницу Настю на тему:" + userInput })
 })
   .then(res => res.json())
   .then(data => {
