@@ -4,7 +4,7 @@
 import * as THREE from 'https://cdn.skypack.dev/three@0.150.1';
 
 
-let camera, scene, renderer;
+let camera, scene, renderer, listener;
 let mouseX = 0, mouseY = 0;
 let FlickerLight;
 let CigaretteButt, CigaretteLight;
@@ -13,7 +13,8 @@ let StandGuy;
 let INTERSECTED = null;
 let StandGuyScrewedYou = false;
 let SpinForMeBaby = false;
-let socks;
+let socks, socksLight;
+let booom;
 
 const windowHalf = {
   x: window.innerWidth / 2,
@@ -38,6 +39,10 @@ function init() {
   // Camera
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 5000);
   camera.position.set(0, 50, 100);
+
+  // Camera-sound
+  listener = new THREE.AudioListener(); 
+  camera.add(listener); 
 
   //Light
 
@@ -74,6 +79,9 @@ scene.add(CigaretteButt);
 CigaretteLight.position.set(55.5, 30, -470);
 scene.add(CigaretteLight);
 
+  socksLight = new THREE.PointLight(0xffffff, 0, 500);
+  socksLight.position.set(300, -200, -250);
+scene.add(socksLight);
   
 const pointLightHelper1 = new THREE.PointLightHelper( CeilingLight, 0);
 const pointLightHelper2 = new THREE.PointLightHelper( CeilingLight2, 0);
@@ -123,15 +131,16 @@ scene.add( pointLightHelper4 );
     new THREE.MeshLambertMaterial({ map: loader.load('table_front.png'), transparent: true, side: THREE.DoubleSide }),
   ];
 
+  //SOUNDS
+
+  booom = new THREE.Audio(listener); new THREE.AudioLoader().load('booom.mp3', b => booom.setBuffer(b));
+  booom.setVolume(0.05);
+
 
   //BIRTHDAY
  socks = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshLambertMaterial({ map: loader.load('socks.png'), transparent: true, side: THREE.DoubleSide }));
   socks.position.set(300, -200, -270);
   scene.add(socks);
-  
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(1000, 300), new THREE.MeshLambertMaterial({ map: loader.load('sign.png'), transparent: true, side: THREE.DoubleSide }));
-  sign.position.set(0, 110, -499);
-  scene.add(sign);
 
 
   // Room cube
@@ -201,12 +210,12 @@ function onClick() {
 function showInitialOptions() {
   camera.position.z -= 100;
   overlay.style.display = "flex";
-  message.innerText = "У кого др-то?))";
+  message.innerText = "Hi-up. Wanna rent a movie?";
   buttonsDiv.innerHTML = "";
 
   const questions = [
-    { text: "У меня!!!)))00!)0", handler: handleQ1 },
-   //{ text: "Recommend me a movie!", handler: handleQ2 },
+    { text: "Recommend me one!", handler: handleQ2 },
+   { text: "I don`t know... I just really need to talk to someone.", handler: handleQ1 },
    //{ text: "What are you doing here?", handler: handleQ3 },
    //{ text: "I`m just wandering around", handler: handleQ4 },
   ];
@@ -222,26 +231,49 @@ function showInitialOptions() {
 //Q1
 function handleQ1() {
   
-  message.innerText = "Генератор поздравления на любую тему (но только для Насти)";
+  message.innerText = "I`m no psychologist, but I`ll come up with something. What`s been on your mind? Tell me whatever. I keep no server data.";
   buttonsDiv.innerHTML = "";
   
 
   const input = document.createElement("input");
   input.type = "text";
+  input.size = 15;
   input.placeholder = "";
   input.classList.add("overlay-input");
+
+  input.addEventListener("input", () => {
+  input.size = Math.min(Math.max(input.value.length, 15), 100);
+});
 
   const submitBtn = document.createElement("button");
   submitBtn.textContent = "Submit";
 
+//Enter works as click
+  input.addEventListener("keydown", function(e) {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    submitBtn.click();
+  }
+});
+
   submitBtn.addEventListener("click", () => {
   const userInput = input.value;
+  message.innerText = "wait a sec...";
+  submitBtn.textContent = "";
+  buttonsDiv.innerHTML = "";
+  
 
   // Send userInput to Google Cloud Function
   fetch('https://gemini-cloud-function-994729946863.europe-west1.run.app', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ prompt: "Поздравь именинницу Настю на тему:" + userInput })
+  body: JSON.stringify({ prompt: "Analyze provided text as if you were a professional psychotherapist with 40 years of experience; \
+    Also consider my mistakes, repeated words, epithets and original language form - what does each tell you? \
+    Highlight 1) my current mood and mental state; 2) my current job/businesses/hobbies; 3) my possible or obvious personal and professional life problems and struggles.\
+    Based on that information, choose a film that will represent me the most and a) help me to deal with highlighs in point 3; b) be relevant to highlights in points 2 and 3.\
+    How you Answer: first line only the name of the film, then skip a line, \
+    then highlight why you chose this film and how it would help me in no more than 25 words. You can write no more than 35 words total.\
+    Formulate that feature as if you were a smart, empathetic and depressed teenage girl that really tries to make me like her (but not obviously). My letter text:" + userInput })
 })
   .then(res => res.json())
   .then(data => {
@@ -252,13 +284,14 @@ function handleQ1() {
     } else {
       message.innerText = "Error: Unexpected response";
     }
+    
   })
   .catch(err => {
     message.innerText = "Error: " + err.message;
   });
-          buttonsDiv.innerHTML = "";
+
       const closeBtn = document.createElement("button");
-      closeBtn.textContent = "omfg not again...";
+      closeBtn.textContent = "close";
       closeBtn.addEventListener("click", (e) => {e.stopPropagation(); overlay.style.display = "none"; camera.position.z -= -100;});
       buttonsDiv.appendChild(closeBtn);
 });
@@ -269,46 +302,174 @@ function handleQ1() {
 
 //Q2
 function handleQ2() {
-  message.innerText = "Yeah. Watch ya thinking `bout?";
+  message.innerText = "Yeah. Watch ya thinking `bout? (Every input`s optional)";
   buttonsDiv.innerHTML = "";
 
+  // Text input (with dynamic size and placeholder "key words")
+  const input = document.createElement("input");
+  input.type = "text";
+  input.size = 22;
+  input.placeholder = "key words";
+  input.classList.add("overlay-input");
+  input.addEventListener("input", () => {
+    input.size = Math.min(Math.max(input.value.length, 22), 100);
+  });
+  input.style.display = "block";
+
+  // season`s mood toggle button
+  let moodOn = false;
+  const moodBtn = document.createElement("button");
+  const setMoodLabel = () => (moodBtn.textContent = `season\`s mood: ${moodOn ? "on" : "off"}`);
+  setMoodLabel();
+  moodBtn.addEventListener("click", () => {
+    moodOn = !moodOn;
+    setMoodLabel();
+  });
+  moodBtn.style.display = "block";
+  moodBtn.style.marginTop = "8px";
+
+  // List box 1
+    const list1 = document.createElement("select");
+  list1.classList.add("overlay-input");
+  const options1 = [
+    { value: "Your MBTI type", label: "Your MBTI type" },
+    { value: "ENTJ", label: "ENTJ" }, { value: "ENTP", label: "ENTP" },
+    { value: "ENFJ", label: "ENFJ" }, { value: "ENFP", label: "ENFP" },
+    { value: "ESTJ", label: "ESTJ" }, { value: "ESTP", label: "ESTP" },
+    { value: "ESFJ", label: "ESFJ" }, { value: "ESFP", label: "ESFP" },
+    { value: "INTJ", label: "INTJ" }, { value: "INTP", label: "INTP" },
+    { value: "INFJ", label: "INFJ" }, { value: "INFP", label: "INFP" },
+    { value: "ISTJ", label: "ISTJ" }, { value: "ISTP", label: "ISTP" },
+    { value: "ISFJ", label: "ISFJ" }, { value: "ISFP", label: "ISFP" },
+  ];
+  options1.forEach(({ value, label }) => {
+    const opt = document.createElement("option");
+    opt.value = value;
+    opt.textContent = label;
+    list1.appendChild(opt);
+  });
+  list1.style.display = "block";
+
+  // List box 2
+    const list2 = document.createElement("select");
+  list2.classList.add("overlay-input");
+  const options2 = [
+    { value: "Your star sign", label: "Your star sign" },
+    { value: "Aries", label: "Aries" }, { value: "Taurus", label: "Taurus" },
+    { value: "Gemini", label: "Gemini" }, { value: "Cancer", label: "Cancer" },
+    { value: "Leo", label: "Leo" }, { value: "Virgo", label: "Virgo" },
+    { value: "Libra", label: "Libra" }, { value: "Scorpio", label: "Scorpio" },
+    { value: "Sagittarius", label: "Sagittarius" }, { value: "Capricorn", label: "Capricorn" },
+    { value: "Aquarius", label: "Aquarius" }, { value: "Pisces", label: "Pisces" },
+  ];
+  options2.forEach(({ value, label }) => {
+    const opt = document.createElement("option");
+    opt.value = value;
+    opt.textContent = label;
+    list2.appendChild(opt);
+  });
+  list2.style.display = "block";
+
+  // Submit button
   const btn1 = document.createElement("button");
-  btn1.textContent = "Today is a marvelous day.";
+  btn1.textContent = "Submit";
+  btn1.style.display = "block";
+  btn1.style.marginTop = "8px";
+
+  // Enter key submits (mirrors handleQ1)
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      btn1.click();
+    }
+  });
+
   btn1.addEventListener("click", () => {
-    const today = new Date();
-    const options = { month: 'long', day: 'numeric' };
-    const formattedDate = today.toLocaleDateString('en-US', options);
+    try {
+      const userInput = input.value;
 
-    message.innerText = `Is it? ${formattedDate}? I guess. Autumn is great for Dead Poets Society.`;
-    buttonsDiv.innerHTML = "";
+      // Build prompt (replace hasText with a trim check)
+      const parts = ["Recommend me a movie!"];
+      if (typeof userInput === "string" && userInput.trim().length > 0) {
+        parts.push(".Key word (s) will be: ", userInput.trim());
+      }
+      if (moodOn) {
+        const month = new Date().toLocaleString("en-US", { month: "long" });
+        parts.push(".It should also be about this beautiful month of ", month);
+      }
+      if (list1.value !== "Your MBTI type") {
+        parts.push(".It should represent people of MBTI type - ", list1.value);
+      }
+      if (list2.value !== "Your star sign") {
+        parts.push(".And be just for the ", list2.value);
+      }
 
-    const closeBtn = document.createElement("button");
-    closeBtn.textContent = "Thanks!";
-    closeBtn.addEventListener("click", (e) => {e.stopPropagation(); overlay.style.display = "none";camera.position.z -= -100;});
-    buttonsDiv.appendChild(closeBtn);
+      message.innerText = "wait a sec...";
+      btn1.textContent = "";
+      btn1.disabled = true;
+      buttonsDiv.innerHTML = "";
+
+      fetch("https://gemini-cloud-function-994729946863.europe-west1.run.app", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: parts.join(" ") + "How you Answer: first line only the name of the film, then skip a line, \
+    then highlight why you chose this film in no more than 45 words. You can write no more than 55 words total" }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.reply !== undefined) {
+            message.innerText = data.reply;
+          } else if (data.error) {
+            message.innerText = "Error: " + data.error;
+          } else {
+            message.innerText = "Error: Unexpected response";
+          }
+        })
+        .catch((err) => {
+          message.innerText = "Error: " + err.message;
+        });
+
+      const closeBtn = document.createElement("button");
+      closeBtn.textContent = "close";
+      closeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        overlay.style.display = "none";
+        camera.position.z -= -100;
+      });
+      buttonsDiv.appendChild(closeBtn);
+    } catch (err) {
+      message.innerText = "Error: " + (err && err.message ? err.message : String(err));
+    }
   });
 
+  // "What are YOUR favourites?"
   const btn2 = document.createElement("button");
-  btn2.textContent = "What are your favourites?";
+  btn2.textContent = "What are YOUR favourites?";
+  btn2.style.display = "block";
+  btn2.style.marginTop = "8px";
   btn2.addEventListener("click", () => {
-    camera.position.z -= 100;
-    triggerExternalAnimation(); // Stub
     message.innerText = "You will never be able to comprehend the levels of MY understanding of cinema.";
+    booom.play();
+    camera.position.z -= 100;
     buttonsDiv.innerHTML = "";
 
     const closeBtn = document.createElement("button");
-    closeBtn.textContent = "...I guess.";
-    closeBtn.addEventListener("click", (e) => {e.stopPropagation(); camera.position.z -= -200; overlay.style.display = "none";});
+    closeBtn.textContent = "close";
+    closeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      overlay.style.display = "none";
+      camera.position.z -= -200;
+    });
     buttonsDiv.appendChild(closeBtn);
   });
 
+  // Append all controls to the UI
+  buttonsDiv.appendChild(input);
+  buttonsDiv.appendChild(moodBtn);
+  buttonsDiv.appendChild(list1);
+  buttonsDiv.appendChild(list2);
   buttonsDiv.appendChild(btn1);
   buttonsDiv.appendChild(btn2);
-}
-
-// Stub external animation function
-function triggerExternalAnimation() {
-  console.log("External animation triggered");
 }
 
 
@@ -499,8 +660,14 @@ if (overlay.style.display !== "flex") {
 
 //SPINFORMEBABY
   if (SpinForMeBaby) {
-  socks.rotation.z += 2;
+  socksLight.color.setHSL((performance.now() * 0.0001) % 1, 1, 0.05);
+  socksLight.intensity = 50 + 50 * Math.sin(performance.now() * 0.004);
+  socks.rotation.z += 0.1;
+  socks.rotation.y += 0.01;
+  socks.rotation.x += 0.1;
   }
+  else {
+  socksLight.intensity = 0;}
 
 }
 
