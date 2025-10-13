@@ -4,7 +4,7 @@ body {
   margin: 0;
   overflow: hidden;
   font-family: 'Press Start 2P', sans-serif;
-  background: #000; /* optional black background */
+  background: #000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -12,28 +12,41 @@ body {
 }
 
 #overlay {
-  position: fixed; /* Make it overlay the screen */
-  top: 50%;
+  position: fixed;
   left: 50%;
-  transform: translate(-50%, 0%); /* Center it */
-  
+  bottom: 10vh;
+  transform: translateX(-50%);
+
   background: #0000009d;
   border: 2px solid #fff;
   border-radius: 0;
   color: #fff;
   text-align: center;
-  
-  width: auto;
-  min-width: 400px;
-  min-height: 150px;
-  padding: 40px 20px;
-  
+
+  width: 90vw;
+  max-width: 480px;
+  min-width: 220px;
+  height: auto;
+  max-height: 80vh;
+  min-height: 100px;
+  padding: 3vw 2vw;
+
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
 
-  z-index: 1000; /* Ensure it appears above other elements */
+  z-index: 1000;
+  overflow: auto;
+}
+
+@media (max-width: 600px), (max-height: 600px) {
+  #overlay {
+    padding: 6vw 2vw;
+    font-size: 12px;
+    max-width: 98vw;
+    max-height: 90vh;
+  }
 }
 
 #buttons button {
@@ -46,6 +59,8 @@ body {
   font-size: 15px;
   cursor: pointer;
   transition: all 0.2s ease;
+  max-width: 95vw;
+  word-break: break-word;
 }
 
 #buttons button:hover {
@@ -55,20 +70,39 @@ body {
 }
 
 #overlay .overlay-input {
-  width: min(600px, 90%);
+  width: 100%;
+  max-width: 440px;
+  min-width: 120px;
   padding: 14px 16px;
   font-family: 'Press Start 2P', sans-serif;
-  font-size: 15px;        
+  font-size: 15px;
   line-height: 1.2;
-  height: 48px;            /* explicit height */
   border: 2px solid #fff;
   background: #000;
   color: #fff;
-  box-sizing: border-box;  /* keeps width predictable with padding */
+  box-sizing: border-box;
   margin-top: 12px;
+  height: auto;          
+  min-height: 48px;
+  max-height: calc(1.2em * 4 + 32px); 
+  overflow-y: auto;
+  resize: none;
 }
 
 #overlay .overlay-input::placeholder {
   color: #bbb;
   opacity: 1;
+}
+
+@media (max-width: 600px), (max-height: 600px) {
+  #overlay .overlay-input {
+    font-size: 12px;
+    padding: 10px 8px;
+    height: 38px;
+    max-width: 98vw;
+  }
+  #buttons button {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
 }

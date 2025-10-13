@@ -1,8 +1,5 @@
-//WHEN CLOSE BUTTON IS CLICKED, I CLICK THE STANDGUY SO IT NEVER GETS CLOSED. STANDGUY ONLY LISTENS TO CLICKS WHEN THERE IS NO OVERLAY. FIX!!!
-
-
 import * as THREE from 'https://cdn.skypack.dev/three@0.150.1';
-
+//It`s all vibe coding, plus I was learning on the go. Don`t judge harshly. 
 
 let camera, scene, renderer, listener;
 let mouseX = 0, mouseY = 0;
@@ -14,7 +11,11 @@ let INTERSECTED = null;
 let StandGuyScrewedYou = false;
 let SpinForMeBaby = false;
 let socks, socksLight;
-let booom;
+let booom, meow;
+
+let lastPromptQ1 = "";
+let lastPromptQ2 = "";
+let isSocksOverlayOpen = false;
 
 const windowHalf = {
   x: window.innerWidth / 2,
@@ -136,8 +137,10 @@ scene.add( pointLightHelper4 );
   booom = new THREE.Audio(listener); new THREE.AudioLoader().load('booom.mp3', b => booom.setBuffer(b));
   booom.setVolume(0.05);
 
+  meow = new THREE.Audio(listener); new THREE.AudioLoader().load('meow.mp3', b => meow.setBuffer(b));
+  meow.setVolume(0.1);
 
-  //BIRTHDAY
+  //SOCKS(or not)
  socks = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshLambertMaterial({ map: loader.load('socks.png'), transparent: true, side: THREE.DoubleSide }));
   socks.position.set(300, -200, -270);
   scene.add(socks);
@@ -182,8 +185,22 @@ scene.add(Smoke2);
 
 }
 
-//StandGuy clicking menu
+//Clicking menu
 function onClick() {
+  raycaster.setFromCamera(mouse, camera);
+
+  const socksIntersects = raycaster.intersectObject(socks);
+  if (socksIntersects.length > 0) {
+    if (isSocksOverlayOpen) {
+      overlay.style.display = "none";
+      SpinForMeBaby = !SpinForMeBaby;
+      isSocksOverlayOpen = false;
+    } else if (overlay.style.display !== "flex") {
+      socksCredits();
+    }
+    return;
+  }
+
   if (overlay.style.display === "flex") return;
 
   if (StandGuyScrewedYou) {
@@ -198,16 +215,28 @@ function onClick() {
   if (standIntersects.length > 0) {
     showInitialOptions();
   }
-
-  //Socks
-  const socksIntersects = raycaster.intersectObject(socks);
-  if (socksIntersects.length > 0) {
-    SpinForMeBaby = !SpinForMeBaby;
-  }
 }
+
+
+function socksCredits() {
+    overlay.style.display = "flex";
+    isSocksOverlayOpen = true;
+    buttonsDiv.innerHTML = "";
+    message.innerText = "Socks says: this is a cool website!";
+    SpinForMeBaby = !SpinForMeBaby;
+        
+    const LinkBtn = document.createElement("button");
+      LinkBtn.textContent = "socks";
+      LinkBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        meow.play();
+      });
+      buttonsDiv.appendChild(LinkBtn);
+  }
 
 //mainmenu
 function showInitialOptions() {
+  isSocksOverlayOpen = false; // ensure state reset if other overlay opens
   camera.position.z -= 100;
   overlay.style.display = "flex";
   message.innerText = "Hi-up. Wanna rent a movie?";
@@ -230,89 +259,223 @@ function showInitialOptions() {
 
 //Q1
 function handleQ1() {
-  
-  message.innerText = "I`m no psychologist, but I`ll come up with something. What`s been on your mind? Tell me whatever. I keep no server data.";
+  isSocksOverlayOpen = false; // ensure state reset
+  message.innerText = "What`s been on your mind? Tell me whatever. I keep no server data.";
   buttonsDiv.innerHTML = "";
-  
 
-  const input = document.createElement("input");
-  input.type = "text";
-  input.size = 15;
+  let lastPromptQ1 = "";
+  let seenMoviesQ1 = [];
+  let seenBtnQ1 = null;
+
+  const extractMovieTitle = (text) => {
+    if (!text) return "";
+    const lines = String(text).split("\n").map((l) => l.trim()).filter(Boolean);
+    return lines[0] || "";
+  };
+//CLOSE BTN
+  const ensureCloseButton = () => {
+    const alreadyHasClose = [...buttonsDiv.querySelectorAll("button")].some(
+      (b) => b.textContent === "close"
+    );
+    if (!alreadyHasClose) {
+      const closeBtn = document.createElement("button");
+      closeBtn.textContent = "close";
+      closeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        overlay.style.display = "none";
+        camera.position.z -= -100;
+      });
+      buttonsDiv.appendChild(closeBtn);
+    }
+  };
+//SEEN
+  const appendSeenButton = () => {
+    if (seenBtnQ1 && seenBtnQ1.isConnected) {
+      seenBtnQ1.remove();
+    }
+    seenBtnQ1 = document.createElement("button");
+    seenBtnQ1.textContent = "I`ve seen that one!";
+    seenBtnQ1.addEventListener("click", () => {
+      const continuationPrompt =
+        lastPromptQ1 +
+        "\n\nContinue the same dialog. Recommend one different film than any you suggested before" +
+        (seenMoviesQ1.length ? ` (avoid: ${seenMoviesQ1.join(", ")})` : "") +
+        ". Keep the same strict answer form. Reply with only one film";
+      sendPrompt(continuationPrompt, true);
+    });
+    buttonsDiv.appendChild(seenBtnQ1);
+  };
+
+  const sendPrompt = (prompt, isContinuation = false) => {
+    message.innerText = "wait a sec...";
+    buttonsDiv.innerHTML = "";
+    ensureCloseButton();
+
+    fetch("https://gemini-cloud-function-994729946863.europe-west1.run.app", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.reply !== undefined) {
+          message.innerText = data.reply;
+
+          const title = extractMovieTitle(data.reply);
+          if (title && !seenMoviesQ1.includes(title)) seenMoviesQ1.push(title);
+
+          appendSeenButton();
+          ensureCloseButton();
+        } else if (data.error) {
+          message.innerText = "Error: " + data.error;
+        } else {
+          message.innerText = "Error: Unexpected response";
+        }
+      })
+      .catch((err) => {
+        message.innerText = "Error: " + err.message;
+      });
+  };
+
+  const input = document.createElement("textarea");
+  input.rows = 1;
+  input.maxLength = 400;
   input.placeholder = "";
   input.classList.add("overlay-input");
-
+  input.style.resize = "none";
+  input.style.overflowY = "hidden";
   input.addEventListener("input", () => {
-  input.size = Math.min(Math.max(input.value.length, 15), 100);
-});
+    input.rows = 1;
+    const lines = input.value.split("\n").length;
+    const scrollRows = Math.ceil(input.scrollHeight / 24);
+    input.rows = Math.min(Math.max(lines, scrollRows), 4);
+  });
 
   const submitBtn = document.createElement("button");
   submitBtn.textContent = "Submit";
 
-//Enter works as click
-  input.addEventListener("keydown", function(e) {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    submitBtn.click();
-  }
-});
-
-  submitBtn.addEventListener("click", () => {
-  const userInput = input.value;
-  message.innerText = "wait a sec...";
-  submitBtn.textContent = "";
-  buttonsDiv.innerHTML = "";
-  
-
-  // Send userInput to Google Cloud Function
-  fetch('https://gemini-cloud-function-994729946863.europe-west1.run.app', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ prompt: "Analyze provided text as if you were a professional psychotherapist with 40 years of experience; \
-    Also consider my mistakes, repeated words, epithets and original language form - what does each tell you? \
-    Highlight 1) my current mood and mental state; 2) my current job/businesses/hobbies; 3) my possible or obvious personal and professional life problems and struggles.\
-    Based on that information, choose a film that will represent me the most and a) help me to deal with highlighs in point 3; b) be relevant to highlights in points 2 and 3.\
-    How you Answer: first line only the name of the film, then skip a line, \
-    then highlight why you chose this film and how it would help me in no more than 25 words. You can write no more than 35 words total.\
-    Formulate that feature as if you were a smart, empathetic and depressed teenage girl that really tries to make me like her (but not obviously). My letter text:" + userInput })
-})
-  .then(res => res.json())
-  .then(data => {
-    if (data.reply !== undefined) {
-      message.innerText = data.reply;
-    } else if (data.error) {
-      message.innerText = "Error: " + data.error;
-    } else {
-      message.innerText = "Error: Unexpected response";
+  // Enter works as click
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      submitBtn.click();
     }
-    
-  })
-  .catch(err => {
-    message.innerText = "Error: " + err.message;
   });
 
-      const closeBtn = document.createElement("button");
-      closeBtn.textContent = "close";
-      closeBtn.addEventListener("click", (e) => {e.stopPropagation(); overlay.style.display = "none"; camera.position.z -= -100;});
-      buttonsDiv.appendChild(closeBtn);
-});
+  submitBtn.addEventListener("click", () => {
+    const userInput = input.value;
+    // Base prompt for the first send; store it for continuation
+    lastPromptQ1 =
+      userInput +
+      ". Think of what film is about this and helps to deal with these problems. Don`t make it an obvious choise. " +
+      "Strict answer form: first line only the name of the film, then skip a line, " +
+      "then highlight why you chose this film in less than 25 words. Write as you are a teenager. No emojis";
+
+    sendPrompt(lastPromptQ1, false);
+  });
 
   buttonsDiv.appendChild(input);
   buttonsDiv.appendChild(submitBtn);
 }
 
-//Q2
 function handleQ2() {
+  isSocksOverlayOpen = false; // ensure state reset
   message.innerText = "Yeah. Watch ya thinking `bout? (Every input`s optional)";
   buttonsDiv.innerHTML = "";
 
-  // Text input (with dynamic size and placeholder "key words")
-  const input = document.createElement("input");
-  input.type = "text";
-  input.size = 22;
+  // State for continuation
+  let lastPromptQ2 = "";
+  let seenMoviesQ2 = [];
+  let seenBtnQ2 = null;
+
+  const extractMovieTitle = (text) => {
+    if (!text) return "";
+    const lines = String(text).split("\n").map((l) => l.trim()).filter(Boolean);
+    return lines[0] || "";
+  };
+
+  const ensureCloseButton = () => {
+    const alreadyHasClose = [...buttonsDiv.querySelectorAll("button")].some(
+      (b) => b.textContent === "close"
+    );
+    if (!alreadyHasClose) {
+      const closeBtn = document.createElement("button");
+      closeBtn.textContent = "close";
+      closeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        overlay.style.display = "none";
+        camera.position.z -= -100;
+      });
+      buttonsDiv.appendChild(closeBtn);
+    }
+  };
+
+  const appendSeenButton = () => {
+    if (seenBtnQ2 && seenBtnQ2.isConnected) {
+      seenBtnQ2.remove();
+    }
+    seenBtnQ2 = document.createElement("button");
+    seenBtnQ2.textContent = "I`ve seen that one!";
+    seenBtnQ2.style.display = "inline-block";
+    seenBtnQ2.style.marginTop = "8px";
+    seenBtnQ2.addEventListener("click", () => {
+      const continuationPrompt =
+        lastPromptQ2 +
+        "\n\nContinue the same dialog. Recommend only one different film than any you suggested before" +
+        (seenMoviesQ2.length ? ` (avoid: ${seenMoviesQ2.join(", ")})` : "") +
+        ". Keep the same strict answer form. Reply with only one film";
+      sendPrompt(continuationPrompt, true);
+    });
+    buttonsDiv.appendChild(seenBtnQ2);
+  };
+
+  const sendPrompt = (prompt, isContinuation = false) => {
+    message.innerText = "wait a sec...";
+    // Keep only the close button while waiting
+    buttonsDiv.innerHTML = "";
+    ensureCloseButton();
+
+    fetch("https://gemini-cloud-function-994729946863.europe-west1.run.app", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.reply !== undefined) {
+          message.innerText = data.reply;
+
+          // Track the movie to avoid repeating on continuation
+          const title = extractMovieTitle(data.reply);
+          if (title && !seenMoviesQ2.includes(title)) seenMoviesQ2.push(title);
+
+          // After receiving data, show "I've seen that one!" and keep "close"
+          appendSeenButton();
+          ensureCloseButton();
+        } else if (data.error) {
+          message.innerText = "Error: " + data.error;
+        } else {
+          message.innerText = "Error: Unexpected response";
+        }
+      })
+      .catch((err) => {
+        message.innerText = "Error: " + err.message;
+      });
+  };
+
+  // Text input
+  const input = document.createElement("textarea");
+  input.rows = 1;
+  input.maxLength = 400;
   input.placeholder = "key words";
   input.classList.add("overlay-input");
+  input.style.resize = "none";
+  input.style.overflowY = "hidden";
   input.addEventListener("input", () => {
-    input.size = Math.min(Math.max(input.value.length, 22), 100);
+    input.rows = 1;
+    const lines = input.value.split("\n").length;
+    const scrollRows = Math.ceil(input.scrollHeight / 24);
+    input.rows = Math.min(Math.max(lines, scrollRows), 4);
   });
   input.style.display = "block";
 
@@ -329,7 +492,7 @@ function handleQ2() {
   moodBtn.style.marginTop = "8px";
 
   // List box 1
-    const list1 = document.createElement("select");
+  const list1 = document.createElement("select");
   list1.classList.add("overlay-input");
   const options1 = [
     { value: "Your MBTI type", label: "Your MBTI type" },
@@ -351,7 +514,7 @@ function handleQ2() {
   list1.style.display = "block";
 
   // List box 2
-    const list2 = document.createElement("select");
+  const list2 = document.createElement("select");
   list2.classList.add("overlay-input");
   const options2 = [
     { value: "Your star sign", label: "Your star sign" },
@@ -376,7 +539,6 @@ function handleQ2() {
   btn1.style.display = "block";
   btn1.style.marginTop = "8px";
 
-  // Enter key submits (mirrors handleQ1)
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -388,55 +550,27 @@ function handleQ2() {
     try {
       const userInput = input.value;
 
-      // Build prompt (replace hasText with a trim check)
       const parts = ["Recommend me a movie!"];
       if (typeof userInput === "string" && userInput.trim().length > 0) {
-        parts.push(".Key word (s) will be: ", userInput.trim());
+        parts.push(".Key word(s) will be: ", userInput.trim());
       }
       if (moodOn) {
         const month = new Date().toLocaleString("en-US", { month: "long" });
-        parts.push(".It should also be about this beautiful month of ", month);
+        parts.push(".It must correlate with ", month);
       }
       if (list1.value !== "Your MBTI type") {
-        parts.push(".It should represent people of MBTI type - ", list1.value);
+        parts.push(".Its story should be liked by ", list1.value);
       }
       if (list2.value !== "Your star sign") {
-        parts.push(".And be just for the ", list2.value);
+        parts.push(".And its vibe should be liked by ", list2.value);
       }
 
-      message.innerText = "wait a sec...";
-      btn1.textContent = "";
-      btn1.disabled = true;
-      buttonsDiv.innerHTML = "";
+      lastPromptQ2 =
+        parts.join(" ") +
+        " Be sure to include EVERYTHING mentioned in your answer. Strict answer form: first line only the name of the film, then skip a line, " +
+        "then highlight why you chose this film in less than 25 words. Write as you are in your 20s. No emojis";
 
-      fetch("https://gemini-cloud-function-994729946863.europe-west1.run.app", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: parts.join(" ") + "How you Answer: first line only the name of the film, then skip a line, \
-    then highlight why you chose this film in no more than 45 words. You can write no more than 55 words total" }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.reply !== undefined) {
-            message.innerText = data.reply;
-          } else if (data.error) {
-            message.innerText = "Error: " + data.error;
-          } else {
-            message.innerText = "Error: Unexpected response";
-          }
-        })
-        .catch((err) => {
-          message.innerText = "Error: " + err.message;
-        });
-
-      const closeBtn = document.createElement("button");
-      closeBtn.textContent = "close";
-      closeBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        overlay.style.display = "none";
-        camera.position.z -= -100;
-      });
-      buttonsDiv.appendChild(closeBtn);
+      sendPrompt(lastPromptQ2, false);
     } catch (err) {
       message.innerText = "Error: " + (err && err.message ? err.message : String(err));
     }
@@ -463,7 +597,6 @@ function handleQ2() {
     buttonsDiv.appendChild(closeBtn);
   });
 
-  // Append all controls to the UI
   buttonsDiv.appendChild(input);
   buttonsDiv.appendChild(moodBtn);
   buttonsDiv.appendChild(list1);
@@ -475,6 +608,7 @@ function handleQ2() {
 
 //Q3
 function handleQ3() {
+  isSocksOverlayOpen = false; // ensure state reset
   message.innerText = "Mostly chillin`. There`s not much to do yet";
   buttonsDiv.innerHTML = "";
 
@@ -487,6 +621,7 @@ function handleQ3() {
 
 //Q4
 function handleQ4() {
+  isSocksOverlayOpen = false; // ensure state reset
   message.innerText = "Then don`t bother me!";
   buttonsDiv.innerHTML = "";
   setTimeout(() => {
@@ -498,6 +633,7 @@ function handleQ4() {
 
 //Goodbye Message
 function showGoodbyeMessage() {
+  isSocksOverlayOpen = false; // ensure state reset
   overlay.style.display = "flex";
   message.innerText = "Don`t bother me.";
   buttonsDiv.innerHTML = "";
@@ -517,6 +653,7 @@ function onDocumentMouseMove(event) {
   mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
 }
 
+
 function onWindowResize() {
   windowHalf.x = window.innerWidth / 2;
   windowHalf.y = window.innerHeight / 2;
@@ -526,6 +663,7 @@ function onWindowResize() {
 
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
+
 
 function animate() {
   requestAnimationFrame(animate);
@@ -667,10 +805,13 @@ if (overlay.style.display !== "flex") {
   socks.rotation.x += 0.1;
   }
   else {
-  socksLight.intensity = 0;}
+  socksLight.intensity = 0;
+  socks.rotation.z = 0;
+  socks.rotation.y = 0;
+  socks.rotation.x = 0;
+}
 
 }
 
 //Camera animations
-
 
