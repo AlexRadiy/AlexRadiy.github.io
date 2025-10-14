@@ -1,9 +1,12 @@
 import * as THREE from 'https://cdn.skypack.dev/three@0.150.1';
+
+
 //It`s all vibe coding, plus I was learning on the go. Don`t judge harshly. 
 
 let camera, scene, renderer, listener;
 let mouseX = 0, mouseY = 0;
-let FlickerLight;
+let FlickerLight, headlamp1Light, fan, condgrid;
+let fanstrip1, fanstrip2, fanstrip3;
 let CigaretteButt, CigaretteLight;
 let Smoke1, Smoke2;
 let StandGuy;
@@ -12,6 +15,20 @@ let StandGuyScrewedYou = false;
 let SpinForMeBaby = false;
 let socks, socksLight;
 let booom, meow;
+let chooselife;
+let cassette1, cassette2, cassette3;
+let boomboxMesh;
+
+
+let boombox = {
+  isOn: false,
+  isBroken: false,
+  toggleCount: 0,
+  maxToggles: 25,
+  currentTrack: null,
+};
+
+let music1, music2, music3;
 
 let lastPromptQ1 = "";
 let lastPromptQ2 = "";
@@ -31,9 +48,12 @@ const buttonsDiv = document.getElementById("buttons");
 
 
 init();
+
 animate();
 
 function init() {
+
+  
   // Scene
   scene = new THREE.Scene();
 
@@ -46,6 +66,8 @@ function init() {
   camera.add(listener); 
 
   //Light
+
+
 
   const OverallLight = new THREE.AmbientLight(0x7a6b5c, 0.4, 10000);
 OverallLight.position.set(0, 200, -100);
@@ -99,6 +121,29 @@ scene.add( pointLightHelper4 );
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
+  //SOUNDS
+
+  booom = new THREE.Audio(listener); new THREE.AudioLoader().load('booom.mp3', b => booom.setBuffer(b));
+  booom.setVolume(0.05);
+
+  meow = new THREE.Audio(listener); new THREE.AudioLoader().load('meow.mp3', b => meow.setBuffer(b));
+  meow.setVolume(0.1);
+
+  music1 = new THREE.Audio(listener);
+new THREE.AudioLoader().load('music2.mp3', buffer => {
+  music1.setBuffer(buffer);
+  music1.setVolume(0.1);
+  boombox.currentTrack = music1;
+  boombox.isOn = true;
+  music1.play();
+});
+
+  music2 = new THREE.Audio(listener); new THREE.AudioLoader().load('music1.mp3', b => music2.setBuffer(b));
+  music2.setVolume(0.1);
+
+  music3 = new THREE.Audio(listener); new THREE.AudioLoader().load('music3.mp3', b => music3.setBuffer(b));
+  music3.setVolume(0.1);
+
 
   // Load textures
   const loader = new THREE.TextureLoader();
@@ -110,9 +155,6 @@ scene.add( pointLightHelper4 );
     new THREE.MeshLambertMaterial({ map: loader.load('Wall1.png'), side: THREE.BackSide }), 
     new THREE.MeshLambertMaterial({ map: loader.load('Wall2.png'), side: THREE.BackSide })  
   ];
-  const StandGuyTexture = new THREE.MeshLambertMaterial({ map: loader.load('Stand.png'), transparent: true, side: THREE.DoubleSide });
-  const Smoke1Texture = new THREE.MeshLambertMaterial({ map: loader.load('Stand smoke.png'), transparent: true, side: THREE.DoubleSide });
-  const Smoke2Texture = new THREE.MeshLambertMaterial({ map: loader.load('Stand smoke 2.png'), transparent: true, side: THREE.DoubleSide });
   
   const tabletopmaterials = [
     new THREE.MeshLambertMaterial({ map: loader.load('tabletop_side.png'), side: THREE.DoubleSide }), 
@@ -132,19 +174,117 @@ scene.add( pointLightHelper4 );
     new THREE.MeshLambertMaterial({ map: loader.load('table_front.png'), transparent: true, side: THREE.DoubleSide }),
   ];
 
-  //SOUNDS
+  const headlampmaterials = [
+    new THREE.MeshLambertMaterial({ map: loader.load('headlamp.png'), transparent: true, side: THREE.DoubleSide }), 
+    new THREE.MeshLambertMaterial({ map: loader.load('headlamp.png'), transparent: true, side: THREE.DoubleSide }), 
+    new THREE.MeshLambertMaterial({ map: loader.load('headlamp.png'), transparent: true, side: THREE.DoubleSide }),   
+    new THREE.MeshBasicMaterial({ map: loader.load('headlamp.png'), transparent: true, side: THREE.DoubleSide }), 
+    new THREE.MeshLambertMaterial({ map: loader.load('headlamp.png'), transparent: true, side: THREE.DoubleSide }), 
+    new THREE.MeshLambertMaterial({ map: loader.load('headlamp.png'), transparent: true, side: THREE.DoubleSide }),
+  ];
 
-  booom = new THREE.Audio(listener); new THREE.AudioLoader().load('booom.mp3', b => booom.setBuffer(b));
-  booom.setVolume(0.05);
+  //CONDITIONER
+  
+  const condpart1 = new THREE.Mesh(new THREE.CylinderGeometry(20, 20, 2000, 32), new THREE.MeshLambertMaterial({ map: loader.load('cond.png'), transparent: true, side: THREE.DoubleSide }));
+  condpart1.position.set(300, 330, -630);
+  condpart1.rotation.z = Math.PI / 2;
+  scene.add(condpart1);
 
-  meow = new THREE.Audio(listener); new THREE.AudioLoader().load('meow.mp3', b => meow.setBuffer(b));
-  meow.setVolume(0.1);
+  const condpart2 = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshLambertMaterial({ map: loader.load('cond.png'), transparent: true, side: THREE.DoubleSide }));
+  condpart2.position.set(400, 300, -680);
+  condpart2.rotation.y = Math.PI / 2;
+  scene.add(condpart2);
 
-  //SOCKS(or not)
+  condgrid = new THREE.Mesh(new THREE.PlaneGeometry(200, 170), new THREE.MeshLambertMaterial({ map: loader.load('cond-grid.png'), transparent: true, side: THREE.DoubleSide }));
+  condgrid.position.set(500, 280, -580);
+  scene.add(condgrid);
+
+  const condpart3 = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshLambertMaterial({ map: loader.load('cond-back.png'), transparent: true, side: THREE.DoubleSide }));
+  condpart3.position.set(500, 300, -600);
+  scene.add(condpart3);
+
+    const condpart4 = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshLambertMaterial({ map: loader.load('cond-back.png'), transparent: true, side: THREE.DoubleSide }));
+  condpart4.position.set(600, 300, -680);
+    condpart4.rotation.y = Math.PI / 2;
+  scene.add(condpart4);
+
+    const condpart5 = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshLambertMaterial({ map: loader.load('cond.png'), transparent: true, side: THREE.DoubleSide }));
+  condpart5.position.set(500, 200, -680);
+  condpart5.rotation.x = Math.PI / 2;
+  scene.add(condpart5);
+
+  fan = new THREE.Mesh(new THREE.PlaneGeometry(140, 140), new THREE.MeshLambertMaterial({ map: loader.load('fan.png'), transparent: true, side: THREE.DoubleSide }));
+  fan.position.set(506, 289, -590);
+  scene.add(fan);
+
+  fanstrip1 = new THREE.Mesh(new THREE.PlaneGeometry(22, 49), new THREE.MeshLambertMaterial({ map: loader.load('fanstrips.png'), transparent: true, side: THREE.DoubleSide }));
+  fanstrip1.position.set(546, 260, -579);
+  scene.add(fanstrip1);
+
+  fanstrip2 = new THREE.Mesh(new THREE.PlaneGeometry(22, 49), new THREE.MeshLambertMaterial({ map: loader.load('fanstrips2.png'), transparent: true, side: THREE.DoubleSide }));
+  fanstrip2.position.set(556, 260, -579);
+  scene.add(fanstrip2);
+
+  fanstrip3 = new THREE.Mesh(new THREE.PlaneGeometry(22, 49), new THREE.MeshLambertMaterial({ map: loader.load('fanstrips3.png'), transparent: true, side: THREE.DoubleSide }));
+  fanstrip3.position.set(556, 260, -579);
+  scene.add(fanstrip3);
+
+  //BOOMBOX & CASSETES
+
+  boomboxMesh = new THREE.Mesh(new THREE.BoxGeometry(182, 84, 84), new THREE.MeshLambertMaterial({ map: loader.load('boombox.png'), transparent: true, side: THREE.DoubleSide }));
+  boomboxMesh.position.set(270, -58, -410);
+  boomboxMesh.rotation.y = -0.3;
+  scene.add(boomboxMesh);
+
+      const boomboxhandle = new THREE.Mesh(new THREE.PlaneGeometry(140, 30), new THREE.MeshLambertMaterial({ map: loader.load('boomboxhandle.png'), transparent: true, side: THREE.DoubleSide }));
+  boomboxhandle.position.set(270, -5, -410);
+  boomboxhandle.rotation.x = Math.PI / 1;
+  boomboxhandle.rotation.y = 0.3;
+  scene.add(boomboxhandle);
+
+  cassette1 = new THREE.Mesh(new THREE.BoxGeometry(50, 10, 40), new THREE.MeshLambertMaterial({ map: loader.load('cover1.png'), transparent: true, side: THREE.DoubleSide }));
+  cassette1.position.set(150, -94, -320);
+  cassette1.rotation.y = -1;
+  scene.add(cassette1);
+
+  cassette2 = new THREE.Mesh(new THREE.BoxGeometry(50, 10, 40), new THREE.MeshLambertMaterial({ map: loader.load('cover2.png'), transparent: true, side: THREE.DoubleSide }));
+  cassette2.position.set(240, -94, -315);
+  cassette2.rotation.y = -0.1;
+  scene.add(cassette2);
+
+  cassette3 = new THREE.Mesh(new THREE.BoxGeometry(50, 10, 40), new THREE.MeshLambertMaterial({ map: loader.load('cover3.png'), transparent: true, side: THREE.DoubleSide }));
+  cassette3.position.set(350, -94, -315);
+  cassette3.rotation.y = 0.5;
+  scene.add(cassette3);
+
+
+
+  //SOCKS
  socks = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshLambertMaterial({ map: loader.load('socks.png'), transparent: true, side: THREE.DoubleSide }));
   socks.position.set(300, -200, -270);
   scene.add(socks);
 
+  //CHOOSE LIFE
+
+ chooselife = new THREE.Mesh(new THREE.PlaneGeometry(110, 210), new THREE.MeshLambertMaterial({ map: loader.load('choose-life.png'), transparent: true, side: THREE.DoubleSide }));
+  chooselife.position.set(-550, 100, -350);
+  chooselife.rotation.y = 1.55555;
+    chooselife.rotation.x = 0.01;
+  scene.add(chooselife);
+
+  // Headlamps
+  const headlamp1 = new THREE.Mesh(new THREE.BoxGeometry(90, 24, 300), headlampmaterials);
+  headlamp1.position.set(-400, 350, -410);
+  scene.add(headlamp1);
+
+  const headlamp2 = new THREE.Mesh(new THREE.BoxGeometry(90, 24, 300), headlampmaterials);
+  headlamp2.position.set(400, 350, -410);
+  scene.add(headlamp2);
+
+  headlamp1Light = new THREE.Mesh(new THREE.PlaneGeometry(90, 300), new THREE.MeshLambertMaterial({ map: loader.load('headlamp.png'), transparent: true, side: THREE.DoubleSide }));
+  headlamp1Light.position.set(-400, 337, -410);
+    headlamp1Light.rotation.x = 1.57;
+  scene.add(headlamp1Light);
 
   // Room cube
   const roomgeometry = new THREE.BoxGeometry(1280, 720, 1280);
@@ -162,18 +302,21 @@ scene.add( pointLightHelper4 );
 
 
   // Guy texture
-StandGuy = new THREE.Mesh(new THREE.PlaneGeometry(222, 327), StandGuyTexture);
+StandGuy = new THREE.Mesh(new THREE.PlaneGeometry(222, 327), new THREE.MeshLambertMaterial({ map: loader.load('Stand.png'), transparent: true, side: THREE.DoubleSide }));
 StandGuy.position.set(0, 0, -500);
-StandGuy.name = "Stranger";
 scene.add(StandGuy);
 
+  const menu = new THREE.Mesh(new THREE.PlaneGeometry(100, 20), new THREE.MeshLambertMaterial({ map: loader.load('menu.png'), transparent: false, side: THREE.DoubleSide }));
+  menu.position.set(0, -50, -499);
+ ///////scene.add(menu);
+
   // Smoke texture
-Smoke1 = new THREE.Mesh(new THREE.PlaneGeometry(1280, 720), Smoke1Texture);
-Smoke1.position.set(0, 0, -450);
+Smoke1 = new THREE.Mesh(new THREE.PlaneGeometry(46, 141), new THREE.MeshLambertMaterial({ map: loader.load('Stand smoke 2.png'), transparent: true, side: THREE.DoubleSide }));
+Smoke1.position.set(90, 140, -480);
 scene.add(Smoke1);
 
-Smoke2 = new THREE.Mesh(new THREE.PlaneGeometry(1280, 720), Smoke2Texture);
-Smoke2.position.set(0, 0, -450);
+Smoke2 = new THREE.Mesh(new THREE.PlaneGeometry(46, 141), new THREE.MeshLambertMaterial({ map: loader.load('Stand smoke.png'), transparent: true, side: THREE.DoubleSide }));
+Smoke2.position.set(90, 140, -480);
 scene.add(Smoke2);
 
   // Mouse move and click
@@ -185,21 +328,10 @@ scene.add(Smoke2);
 
 }
 
+
 //Clicking menu
 function onClick() {
   raycaster.setFromCamera(mouse, camera);
-
-  const socksIntersects = raycaster.intersectObject(socks);
-  if (socksIntersects.length > 0) {
-    if (isSocksOverlayOpen) {
-      overlay.style.display = "none";
-      SpinForMeBaby = !SpinForMeBaby;
-      isSocksOverlayOpen = false;
-    } else if (overlay.style.display !== "flex") {
-      socksCredits();
-    }
-    return;
-  }
 
   if (overlay.style.display === "flex") return;
 
@@ -208,15 +340,97 @@ function onClick() {
     return;
   }
 
-  raycaster.setFromCamera(mouse, camera);
-
-  //StandGuy
+  // StandGuy
   const standIntersects = raycaster.intersectObject(StandGuy);
   if (standIntersects.length > 0) {
     showInitialOptions();
   }
+
+  const socksIntersects = raycaster.intersectObject(socks);
+  if (socksIntersects.length > 0) {
+    socksCredits();
+  }
+
+  const chooselifeIntersects = raycaster.intersectObject(chooselife);
+  if (chooselifeIntersects.length > 0) {
+    chooselifefunction();
+  }
+
+  const boomboxIntersects = raycaster.intersectObject(boomboxMesh);
+  if (boomboxIntersects.length > 0) {
+    boomboxfunction();
+  }
+
+  const cassette1Intersects = raycaster.intersectObject(cassette1);
+  if (cassette1Intersects.length > 0) {
+    insertCassette(1);
+  }
+
+  const cassette2Intersects = raycaster.intersectObject(cassette2);
+  if (cassette2Intersects.length > 0) {
+    insertCassette(2);
+  }
+
+  const cassette3Intersects = raycaster.intersectObject(cassette3);
+  if (cassette3Intersects.length > 0) {
+    insertCassette(3);
+  }
 }
 
+function stopAllMusic() {
+  [music1, music2, music3].forEach((a) => {
+    if (a && a.isPlaying) a.stop();
+  });
+}
+
+function boomboxfunction() {
+  if (boombox.isBroken) {
+    return;
+  }
+
+  boombox.toggleCount += 1;
+  if (boombox.toggleCount > boombox.maxToggles) {
+    boombox.isBroken = true;
+    boombox.isOn = false;
+    stopAllMusic();
+    overlay.style.display = "flex";
+    buttonsDiv.innerHTML = "";
+    message.innerText = "You broke my boombox! I`ll remember that!";
+    setTimeout(() => {overlay.style.display = "none";}, 2000);
+    return;
+  }
+
+  boombox.isOn = !boombox.isOn;
+
+  if (boombox.isOn) {
+    if (boombox.currentTrack) {
+      stopAllMusic();
+      boombox.currentTrack.play();
+    }
+  } else {
+    stopAllMusic();
+  }
+}
+
+
+function insertCassette(n) {
+  if (boombox.isBroken) return;
+
+  const nextTrack = n === 1 ? music1 : n === 2 ? music2 : music3;
+  boombox.currentTrack = nextTrack;
+
+  if (boombox.isOn && nextTrack) {
+    stopAllMusic();
+    nextTrack.play();
+  }
+}
+
+function chooselifefunction(){
+      overlay.style.display = "flex";
+    buttonsDiv.innerHTML = "";
+    message.innerText = "Choose Life. Choose a job. Choose a career. Etc.";
+    setTimeout(() => {overlay.style.display = "none";}, 1800);
+}
 
 function socksCredits() {
     overlay.style.display = "flex";
@@ -231,12 +445,19 @@ function socksCredits() {
         e.stopPropagation();
         meow.play();
       });
+    const closeBtn = document.createElement("button");
+      closeBtn.textContent = "close";
+      closeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        overlay.style.display = "none";
+        SpinForMeBaby = !SpinForMeBaby;
+      });
       buttonsDiv.appendChild(LinkBtn);
+      buttonsDiv.appendChild(closeBtn);
   }
 
 //mainmenu
 function showInitialOptions() {
-  isSocksOverlayOpen = false; // ensure state reset if other overlay opens
   camera.position.z -= 100;
   overlay.style.display = "flex";
   message.innerText = "Hi-up. Wanna rent a movie?";
@@ -244,7 +465,7 @@ function showInitialOptions() {
 
   const questions = [
     { text: "Recommend me one!", handler: handleQ2 },
-   { text: "I don`t know... I just really need to talk to someone.", handler: handleQ1 },
+   { text: "I need movie therapy.", handler: handleQ1 },
    //{ text: "What are you doing here?", handler: handleQ3 },
    //{ text: "I`m just wandering around", handler: handleQ4 },
   ];
@@ -260,7 +481,7 @@ function showInitialOptions() {
 //Q1
 function handleQ1() {
   isSocksOverlayOpen = false; // ensure state reset
-  message.innerText = "What`s been on your mind? Tell me whatever. I keep no server data.";
+  message.innerText = "Tell me your problems and I`ll recommend a film to deal with them!";
   buttonsDiv.innerHTML = "";
 
   let lastPromptQ1 = "";
@@ -298,7 +519,7 @@ function handleQ1() {
     seenBtnQ1.addEventListener("click", () => {
       const continuationPrompt =
         lastPromptQ1 +
-        "\n\nContinue the same dialog. Recommend one different film than any you suggested before" +
+        "\n\nContinue the same dialog. Recommend one single different film than any you suggested before" +
         (seenMoviesQ1.length ? ` (avoid: ${seenMoviesQ1.join(", ")})` : "") +
         ". Keep the same strict answer form. Reply with only one film";
       sendPrompt(continuationPrompt, true);
@@ -367,9 +588,9 @@ function handleQ1() {
     // Base prompt for the first send; store it for continuation
     lastPromptQ1 =
       userInput +
-      ". Think of what film is about this and helps to deal with these problems. Don`t make it an obvious choise. " +
+      ". Think of what film shows how to deal with it. Don`t make it an obvious choise. " +
       "Strict answer form: first line only the name of the film, then skip a line, " +
-      "then highlight why you chose this film in less than 25 words. Write as you are a teenager. No emojis";
+      "then highlight why you chose this film in less than 25 words. Write as you are a teenager. No emojis, no formatting.";
 
     sendPrompt(lastPromptQ1, false);
   });
@@ -431,7 +652,6 @@ function handleQ2() {
 
   const sendPrompt = (prompt, isContinuation = false) => {
     message.innerText = "wait a sec...";
-    // Keep only the close button while waiting
     buttonsDiv.innerHTML = "";
     ensureCloseButton();
 
@@ -445,7 +665,6 @@ function handleQ2() {
         if (data.reply !== undefined) {
           message.innerText = data.reply;
 
-          // Track the movie to avoid repeating on continuation
           const title = extractMovieTitle(data.reply);
           if (title && !seenMoviesQ2.includes(title)) seenMoviesQ2.push(title);
 
@@ -568,7 +787,7 @@ function handleQ2() {
       lastPromptQ2 =
         parts.join(" ") +
         " Be sure to include EVERYTHING mentioned in your answer. Strict answer form: first line only the name of the film, then skip a line, " +
-        "then highlight why you chose this film in less than 25 words. Write as you are in your 20s. No emojis";
+        "then highlight why you chose this film in less than 25 words. Write as you are in your 20s. No emojis. No formatting";
 
       sendPrompt(lastPromptQ2, false);
     } catch (err) {
@@ -673,8 +892,10 @@ function animate() {
   //FlickerLight flicker 
   if (Math.random() < 0.01) { //% chance per frame
   FlickerLight.intensity = 0.3 + Math.random() * 0.1;
+  headlamp1Light.visible = true;
 } else {
   FlickerLight.intensity = 1.0;
+  headlamp1Light.visible = false;
 }
 
 
@@ -736,6 +957,33 @@ if (t < 154 + smokepause) {
   Smoke2.visible = false;
 }
 
+//fan animation 
+    fan.rotation.z += -0.14;
+
+
+      const fancycle = 800;
+      const timefan = Date.now() % fancycle;
+  if (timefan < 200) {
+  fanstrip1.visible = true;
+  fanstrip2.visible = false;
+  fanstrip3.visible = false;
+} else if (timefan < 300) {
+  fanstrip1.visible = false;
+  fanstrip2.visible = true;
+  fanstrip3.visible = false;
+} else if (timefan < 400) {
+  fanstrip1.visible = false;
+  fanstrip2.visible = false;
+  fanstrip3.visible = true;
+} else if (timefan < 600){
+  fanstrip1.visible = false;
+  fanstrip2.visible = true;
+  fanstrip3.visible = false;
+} else if (timefan < 800){
+  fanstrip1.visible = false;
+  fanstrip2.visible = true;
+  fanstrip3.visible = false;
+}
 
   // Smooth camera movement
   camera.rotation.y = -mouseX * 0.01;
@@ -750,7 +998,7 @@ if (overlay.style.display !== "flex") {
   raycaster.setFromCamera(mouse, camera);
   
   // Raycast against both StandGuy and socks
-  const intersects = raycaster.intersectObjects([StandGuy, socks]);
+  const intersects = raycaster.intersectObjects([StandGuy, socks, chooselife, boomboxMesh, cassette1, cassette2, cassette3]);
 
   if (intersects.length > 0) {
     const hit = intersects[0];
@@ -814,4 +1062,3 @@ if (overlay.style.display !== "flex") {
 }
 
 //Camera animations
-
