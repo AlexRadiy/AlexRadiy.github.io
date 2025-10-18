@@ -25,6 +25,7 @@ let room1, room2, room3;
 let pause, play;
 let Esc = false;
 let turnoff, outro, OverallLight, goodbye;
+let mobileDevice = false;
 
 let menuOpen = false;
 let YOURFavStatus = false;
@@ -122,9 +123,14 @@ function setActiveRoom(index, duration = 300) {
 }
 
 
-init();
-
-animate();
+if (!isMobileDevice()) {
+  init();
+  showInitialOptions();
+  animate();
+} else {
+  showInitialOptionsMobile();
+  switchToLightModernTheme();
+}
 
 function init() {
 
@@ -326,7 +332,7 @@ speechFiles = [
 
   //CONDITIONER
   
-  const condpart1 = new THREE.Mesh(new THREE.CylinderGeometry(20, 20, 2000, 32), new THREE.MeshLambertMaterial({ map: loader.load('cond.png'), transparent: true, side: THREE.DoubleSide }));
+  const condpart1 = new THREE.Mesh(new THREE.CylinderGeometry(20, 20, 2000, 32), new THREE.MeshLambertMaterial({ map: loader.load('cond.png'), transparent: false, side: THREE.DoubleSide }));
   condpart1.position.set(300, 330, -630);
   condpart1.rotation.z = Math.PI / 2;
   scene.add(condpart1);
@@ -580,8 +586,12 @@ function getRandomSound() {
 
 
 function speechAnimation(text, container, speed = 100) {
+  if (isMobileDevice()) {
+    container.textContent = text;
+    return Promise.resolve();
+  }
   return new Promise(resolve => {
-    container.textContent = ''; // Clear previous text
+    container.textContent = '';
     let i = 0;
     function typeNext() {
       if (i < text.length) {
@@ -636,10 +646,10 @@ function ensureTopLeftButton(key, label, onClick) {
   buttonsDiv.appendChild(btn);
 }
 
+
+
 function onClick() {
   raycaster.setFromCamera(mouse, camera);
-  buzz.play();
-  buzz2.play();
 
   if (overlay.style.display === "flex") return;
 
@@ -709,6 +719,7 @@ function onClick() {
     const siganimIntersects = raycaster.intersectObject(siganim);
   if (siganimIntersects.length > 0) {
     siganimfunction();
+    switchToLightModernTheme();
   }
 
 
@@ -798,13 +809,16 @@ function freefilmsfunction() {
       ];
 
       // Carousel Setup
-      const SCREEN_GAP = 32;
+      const SCREEN_GAP = 25;
       const carousel = document.createElement("div");
       carousel.id = "carousel";
       carousel.style.display = "grid";
       carousel.style.gridTemplateColumns = "auto 1fr auto";
       carousel.style.alignItems = "center";
       carousel.style.columnGap = "16px";
+      carousel.style.justifyContent = "center";
+      carousel.style.width = "min(440px, 90vw)";
+      carousel.style.margin = "0 auto";
 
       const leftBtn = document.createElement("button");
       leftBtn.className = "nav-btn";
@@ -836,7 +850,7 @@ function freefilmsfunction() {
         screenDiv.style.alignItems = "center";
         screenDiv.style.justifyContent = "center";
         screenDiv.style.height = "450px";
-        screenDiv.style.width = "100%";
+        screenDiv.style.boxSizing = "border-box";
 
         // Poster image
         const img = document.createElement("img");
@@ -844,8 +858,8 @@ function freefilmsfunction() {
         img.alt = `Poster ${idx + 1}`;
         img.style.width = "200px";
         img.style.height = "auto";
-        img.style.border = "3px solid #bbb";
-        img.style.borderRadius = "6px"; // fixed: was "px"
+        img.style.border = "7px solid #bbb";
+        img.style.borderRadius = "6px";
         img.style.cursor = "pointer";
         img.style.transition = "border-color 0.2s";
         img.addEventListener("mouseover", () => {
@@ -875,7 +889,7 @@ function freefilmsfunction() {
 
       // Carousel logic
       let index = 0;
-      const clampIndex = (i) => Math.max(0, Math.min(carouselScreens.length - 1, i));
+      const clampIndex = (i) => ((i + carouselScreens.length) % carouselScreens.length);
 
       const updateCarousel = () => {
         const viewportWidth = viewport.clientWidth || 0;
@@ -888,10 +902,10 @@ function freefilmsfunction() {
         inner.style.width = `${viewportWidth * carouselScreens.length + SCREEN_GAP * (carouselScreens.length - 1)}px`;
         const offset = index * (viewportWidth + SCREEN_GAP);
         inner.style.transform = `translate3d(-${offset}px, 0, 0)`;
-        leftBtn.disabled = (index === 0);
-        rightBtn.disabled = (index === carouselScreens.length - 1);
-        leftBtn.classList.toggle("disabled", leftBtn.disabled);
-        rightBtn.classList.toggle("disabled", rightBtn.disabled);
+        leftBtn.disabled = false;
+        rightBtn.disabled = false;
+        leftBtn.classList.remove("disabled");
+        rightBtn.classList.remove("disabled");
       };
 
       leftBtn.addEventListener("click", () => {
@@ -924,14 +938,13 @@ function freefilmsfunction() {
       }
 
       // Buttons
-      const linkBtn = document.createElement("button");
-      linkBtn.textContent = "youtube playlist";
-      linkBtn.style.display = "block";
-      linkBtn.style.margin = "20px auto";
-      linkBtn.addEventListener("click", () => {
-        window.open("https://youtube.com/playlist?list=PLTYZuvjJPVnGYlXEiFujZFQNk6WMIp6u7&si=4ftAFitm_h-m8bwI", "_blank");
-      });
-
+      ///////const linkBtn = document.createElement("button");
+      //linkBtn.textContent = "youtube playlist";
+      //linkBtn.style.display = "block";
+      //linkBtn.style.margin = "20px auto";
+      //linkBtn.addEventListener("click", () => {
+      //  window.open("https://youtube.com/playlist?list=PLTYZuvjJPVnGYlXEiFujZFQNk6WMIp6u7&si=4ftAFitm_h-m8bwI", "_blank");});
+      //buttonsDiv.appendChild(linkBtn);
       const closeBtn = document.createElement("button");
       closeBtn.textContent = "close";
       closeBtn.style.display = "block";
@@ -944,7 +957,7 @@ function freefilmsfunction() {
         window.removeEventListener("resize", updateCarousel);
       });
 
-      buttonsDiv.appendChild(linkBtn);
+      
       buttonsDiv.appendChild(closeBtn);
     });
 }
@@ -1168,6 +1181,44 @@ SendBtn.style.display = "block";
       buttonsDiv.appendChild(closeBtn);
   }
 
+
+  function showInitialOptionsMobile() {
+  // Show overlay and set menu state
+  overlay.style.display = "flex";
+  if (!menuOpen) {
+    message.innerText = "Wassup. What you want?";
+  } else {
+    message.innerText = "What else?";
+  }
+  menuOpen = true;
+  mobileDevice = true;
+
+  setSubtext('');
+  buttonsDiv.innerHTML = "";
+
+  // Button data
+  const items = [
+    { text: "Recommendation", handler: handleQ1, room: 0 },
+    { text: "Find-a-film",    handler: handleQ2, room: 1 },
+    { text: "Cinemaphile",    handler: handleQ3, room: 2 },
+  ];
+
+  // Create buttons vertically
+  items.forEach((item, idx) => {
+    const btn = document.createElement("button");
+    btn.textContent = item.text;
+    btn.style.display = "block";
+    btn.style.margin = "22px auto";
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      lastInitialIndex = idx;
+      setActiveRoom(idx, 300);
+      item.handler();
+    });
+    buttonsDiv.appendChild(btn);
+  });
+}
+
 //mainmenu
 function showInitialOptions() {
   if (overlay.style.display !== "flex") animateCameraForward(-130, 300);
@@ -1177,6 +1228,11 @@ if (menuOpen === false){speechAnimation("Wassup. What you want?", message, 30)
   }else{message.innerText = "What else?"}
 
 menuOpen = true;
+
+  setTimeout(() => {
+          buzz.play();
+  buzz2.play();
+  }, 1000);
 
   setSubtext('');
 
@@ -1219,7 +1275,7 @@ viewport.appendChild(inner);
 
 const items = [
   { text: "Recommendation", handler: handleQ1 },
-  { text: "Therapy",        handler: handleQ2 },
+  { text: "Find-a-film",    handler: handleQ2 },
   { text: "Cinemaphile",    handler: handleQ3 },
 ];
 
@@ -1233,7 +1289,8 @@ const buttons = items.map((q, idx) => {
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
     lastInitialIndex = idx;
-    // Center the clicked button between < and >
+      document.removeEventListener("keydown", onKey);
+  window.removeEventListener("resize", onResize);
     scrollToIndex(idx);
     q.handler();
   });
@@ -1354,7 +1411,8 @@ function handleQ1() {
   setSubtext('');
 
   // top-left: back to InitialOptions
-  ensureTopLeftButton("back-home", "back", () => showInitialOptions());
+  if (!mobileDevice){ensureTopLeftButton("back-home", "back", () => showInitialOptions());
+  }else ensureTopLeftButton("back-home", "back", () => showInitialOptionsMobile());
 
   // State for continuation
   let lastPromptQ2 = "";
@@ -1669,11 +1727,12 @@ function handleQ1() {
 
 // ================= Q2 =================
 function handleQ2() {
-  speechAnimation("Describe your situation - there probably already is a story about it.", message, 30);
+  speechAnimation("They already made films about anything.", message, 30);
   buttonsDiv.innerHTML = "";
   setSubtext('');
 
-  ensureTopLeftButton("back-home", "back", () => showInitialOptions());
+  if (!mobileDevice){ensureTopLeftButton("back-home", "back", () => showInitialOptions());
+  }else ensureTopLeftButton("back-home", "back", () => showInitialOptionsMobile());
 
   let lastPromptQ1 = "";
   let seenMoviesQ1 = [];
@@ -1853,7 +1912,8 @@ function handleQ3() {
   message.subtext = "";
   setSubtext("");
 
-  ensureTopLeftButton("back-home", "back", () => showInitialOptions());
+  if (!mobileDevice){ensureTopLeftButton("back-home", "back", () => showInitialOptions());
+  }else ensureTopLeftButton("back-home", "back", () => showInitialOptionsMobile());
 
   let lastPromptQ3 = "";
   let seenMoviesQ3 = [];
@@ -1885,7 +1945,7 @@ function handleQ3() {
     }
   };
 
-  // Tweaked seenBtn logic: if 10+ movies, show message
+
   const appendSeenButton = () => {
     if (seenBtnQ3 && seenBtnQ3.isConnected) {
       seenBtnQ3.remove();
@@ -1929,7 +1989,6 @@ function handleQ3() {
     buttonsDiv.appendChild(seenBtnQ3);
   };
 
-  // ===================== UI + Prompt logic unchanged below =====================
 
   const SCREEN_GAP = 32; 
 
@@ -1988,16 +2047,16 @@ function handleQ3() {
       case "Venice":
         return [
           "1932", "1934", "1935", "1936", "1937", "1938", "1939",
-          ...rangeYears(1943, MAX_YEAR)
+          ...rangeYears(1943, MAX_YEAR), "year"
         ].reverse();
       case "Cannes":
-        return rangeYears(1946, MAX_YEAR).reverse();
+        return [...rangeYears(1946, MAX_YEAR), "year"].reverse();
       case "Berlin":
-        return rangeYears(1951, MAX_YEAR).reverse();
+        return [...rangeYears(1951, MAX_YEAR), "year"].reverse();
       case "Toronto":
-        return rangeYears(1976, MAX_YEAR).reverse();
+        return [...rangeYears(1976, MAX_YEAR), "year"].reverse();
       case "Sundance":
-        return rangeYears(1981, MAX_YEAR).reverse();
+        return [...rangeYears(1981, MAX_YEAR), "year"].reverse();
       default:
         return [];
     }
@@ -2193,7 +2252,7 @@ function handleQ3() {
       }
 
       if (festivalSelect.value && festivalSelect.value !== "Festival") {
-        if (festivalYearSelect.style.display !== "none" && festivalYearSelect.value) {
+        if (festivalYearSelect.value && festivalYearSelect.value !== "year") {
           parts.push(`From the films featured in ${festivalSelect.value} ${festivalYearSelect.value} film festival.`);
         } else {
           parts.push(`From the films featured in ${festivalSelect.value} film festival.`);
@@ -2555,7 +2614,7 @@ if (t < 154 + smokepause) {
           // Add perimeter box
           highlightBox = new THREE.BoxHelper(INTERSECTED, 0xffd700); // Gold color
           highlightBox.material.linewidth = 4;
-          /////////scene.add(highlightBox);
+          /////scene.add(highlightBox);
 
           // Show name label
           nameLabel.textContent = INTERSECTED.name || 'Unnamed Object';
@@ -2678,4 +2737,97 @@ click.setVolume(0);
 
 }
 
-//Camera animations
+function switchToLightModernTheme() {
+  // Insert a <style> tag with the new theme overrides
+  const styleId = 'light-modern-theme-style';
+  if (document.getElementById(styleId)) return; // Prevent duplicate
+
+  // Choose a modern, readable font (e.g. 'Inter', fallback to system)
+  const fontLink = document.createElement('link');
+  fontLink.rel = 'stylesheet';
+  fontLink.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap';
+  document.head.appendChild(fontLink);
+
+  const style = document.createElement('style');
+  style.id = styleId;
+  style.innerHTML = `
+    body {
+      background: #fff !important;
+      color: #111 !important;
+      font-family: 'Inter', Arial, Helvetica, sans-serif !important;
+      font-size: 1.5rem !important;
+      transition: background 0.4s, color 0.4s, font-family 0.2s, font-size 0.2s;
+    }
+    #overlay, #carousel .nav-btn, #carousel .inner > button, #buttons button, #overlay .overlay-input {
+      background: #fff !important;
+      color: #111 !important;
+      border-color: #222 !important;
+      font-family: 'Inter', Arial, Helvetica, sans-serif !important;
+      font-size: 1.35rem !important;
+      box-shadow: 0 2px 12px 0 rgba(0,0,0,0.07);
+      transition: background 0.4s, color 0.4s, border-color 0.3s, font-family 0.2s, font-size 0.2s;
+    }
+    #overlay {
+      background: url('Wall1.png') center center/cover no-repeat, rgba(255,255,255,0.94) !important;
+      color: #ffffffff !important; 
+      font-weight: bold !important;
+      font-size: 2.1rem !important;
+    }
+    #overlay .overlay-input {
+      background: #fafafd !important;
+      color: #111 !important;
+      border: 2px solid #222 !important;
+      font-size: 1.25rem !important;
+      padding: 16px 26px !important;
+      min-height: 80px !important;   /* Much higher input box */
+      height: 80px !important;
+      max-height: 220px !important;
+    }
+    #overlay .overlay-input::placeholder {
+      color: #777 !important;
+      font-size: 1.2rem !important;
+    }
+    #blackOverlay {
+      background: #fff !important;
+    }
+    #carousel .nav-btn {
+      padding: 16px 32px !important;
+      font-size: 1.3rem !important;
+    }
+    #carousel .nav-btn:disabled {
+      color: #888 !important;
+      border-color: #bbb !important;
+      background: #f5f5f5 !important;
+    }
+    #carousel .nav-btn:hover, #carousel .inner > button:hover, #buttons button:hover {
+      background: #111 !important;
+      color: #fff !important;
+      border-color: #222 !important;
+    }
+    #carousel .inner > button, #buttons button {
+      padding: 18px 40px !important;
+      font-size: 1.35rem !important;
+    }
+    /* Adjust subtext */
+    #overlay .overlay-subtext {
+      color: #1976d2 !important;
+      font-size: 1.2rem !important;
+    }
+    /* Make lists much more high */
+    #overlay ul, #overlay ol {
+      font-size: 1.25rem !important;
+      line-height: 2.2 !important;
+      margin-top: 24px !important;
+      margin-bottom: 24px !important;
+    }
+    #overlay li {
+      padding: 16px 0 !important;
+      min-height: 40px !important;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function isMobileDevice() {
+  return /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}

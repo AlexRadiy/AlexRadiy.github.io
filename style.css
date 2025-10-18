@@ -28,7 +28,7 @@ body {
   min-width: 220px;
   height: auto;
   max-height: 80vh;
-  min-height: 100px;
+  min-height: 200px;
   padding: 3vw 2vw;
 
   display: flex;
@@ -130,8 +130,12 @@ body {
   max-width: 570px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0px;
   margin-top: 0px;
+}
+
+#carousel, .viewport, .inner, .carousel-screen {
+  box-sizing: border-box;
 }
 
 #carousel .nav-btn {
